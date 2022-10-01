@@ -1,0 +1,36 @@
+{
+  "name": "@trynoice/january",
+  "version": "0.0.1",
+  "description": "Common APIs used by Noice Web applications for gapless audio playback.",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "prepare": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/trynoice/january.git"
+  },
+  "author": "Ashutosh Gangwar <ashutoshgngwr@gmail.com>",
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/trynoice/january/issues"
+  },
+  "homepage": "https://github.com/trynoice/january",
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.38.0",
+    "@typescript-eslint/parser": "^5.38.0",
+    "eslint": "^8.23.1",
+    "eslint-config-prettier": "^8.5.0",
+    "prettier": "^2.7.1",
+    "typescript": "^4.8.3"
+  },
+  "files": [
+    "/dist"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts"
+}
