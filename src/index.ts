@@ -1,1 +1,1 @@
-export default {};
+export { Player } from './player';
