@@ -12,7 +12,7 @@ export class Player {
     this.playWhenReady = true;
     if (this.audioQueue.length > 0) {
       this.playAudio(this.audioQueue[0]);
-    } else if (this.audioQueue.length < 2) {
+    } else if (this.audioQueue.length < 1) {
       this.queueNextItem();
     }
   }
@@ -50,7 +50,7 @@ export class Player {
 
   public addMediaItem(src: string) {
     this.playlist.push(src);
-    if (this.audioQueue.length < 2) {
+    if (this.audioQueue.length < 1) {
       this.queueNextItem();
     }
   }
