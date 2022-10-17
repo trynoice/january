@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "parcel example/example.html example/static/**/*",
     "build": "tsc",
+    "build-example": "parcel build --public-url ./ example/example.html example/static/**/*",
     "clean": "rm -rf dist .parcel-cache",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
@@ -34,5 +35,9 @@
     "/dist"
   ],
   "main": "dist/index.js",
-  "types": "dist/index.d.ts"
+  "types": "dist/index.d.ts",
+  "targets": {
+    "main": false,
+    "types": false
+  }
 }
