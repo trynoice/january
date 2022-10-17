@@ -97,7 +97,7 @@ export class Player {
 
     audio.addEventListener('timeupdate', nextItemQueuer);
     this.audioQueue.push(audio);
-    if (this.playWhenReady && this.audioQueue[0].paused) {
+    if (this.playWhenReady && this.audioQueue.length === 1) {
       this.playAudio(audio);
     }
   }
@@ -148,11 +148,13 @@ export class Player {
     setTimeout(crossFader, 0);
   }
 
-  private async playAudio(audio: HTMLAudioElement): Promise<void> {
-    return audio.play().catch((e) => {
+  private async playAudio(audio: HTMLAudioElement) {
+    try {
+      return await audio.play();
+    } catch (e) {
       console.warn('failed to play audio', audio.src, e);
       this.audioQueue.shift();
       this.queueNextItem();
-    });
+    }
   }
 }
