@@ -1,6 +1,6 @@
 export class Player {
   private static readonly CROSS_FADE_BUFFER = 0.5;
-  private static readonly CROSS_FADE_DURATION = 1.0;
+  private static readonly CROSS_FADE_DURATION = 1.5;
 
   private playlist: string[] = [];
   private audioQueue: HTMLAudioElement[] = [];
@@ -26,9 +26,10 @@ export class Player {
     this.audioQueue[0].pause();
     if (this.isCrossFading) {
       // if the player is cross fading, audio queue must have at least two
-      // elements.
-      this.audioQueue.shift();
+      // elements. Skip cross fade transition, discard the ending item and reset
+      // the next item for normal playback.
       this.isCrossFading = false;
+      this.audioQueue.shift();
       this.audioQueue[0].pause(); // pause cross fading item.
       this.audioQueue[0].volume = this.volume; // restore volume
     }
