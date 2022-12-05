@@ -1,6 +1,7 @@
 import MediaItem from './media-item';
 
-const AudioContextImpl: typeof AudioContext = window.AudioContext;
+const AudioContextImpl: typeof AudioContext =
+  window.AudioContext || window.webkitAudioContext;
 
 export class Player {
   private readonly context: AudioContext = new AudioContextImpl();
