@@ -1,7 +1,7 @@
 {
   "extends": "@parcel/config-default",
   "transformers": {
-    "example/static/*": [
+    "*.{mp3,jan}": [
       "@parcel/transformer-raw"
     ]
   }

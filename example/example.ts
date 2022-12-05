@@ -1,9 +1,9 @@
 import { Player } from '../src/player';
 
 function main() {
-  const player = new Player();
-  player.addMediaItem('static/1.mp3');
-  player.addMediaItem('static/2.mp3');
+  const player = new Player(15);
+  player.addMediaItem('static/1/index.jan');
+  player.addMediaItem('static/2/index.jan');
   document
     .querySelector('#play')
     ?.addEventListener('click', () => player.play());
