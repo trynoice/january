@@ -43,6 +43,7 @@ export class Player {
   }
 
   public async stop() {
+    this.buffering = false;
     clearTimeout(this.bufferTicker);
     await this.pause();
     if (this.context.state !== 'closed') {
@@ -119,6 +120,5 @@ export class Player {
     source.connect(this.gainNode);
     source.start(this.nextChunkStartTime);
     this.nextChunkStartTime += buffer.duration;
-    console.log(buffer.duration);
   }
 }

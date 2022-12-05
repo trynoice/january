@@ -1,5 +1,5 @@
 export default class MediaItem {
-  private readonly fetchOptions: RequestInit = {
+  private static readonly fetchOptions: RequestInit = {
     credentials: 'include',
   };
 
@@ -19,7 +19,7 @@ export default class MediaItem {
   }
 
   public async initialize() {
-    const response = await fetch(this.src, this.fetchOptions);
+    const response = await fetch(this.src, MediaItem.fetchOptions);
 
     if (!response.ok) {
       throw new Error('failed to load the list of chunks for media item');
@@ -50,7 +50,7 @@ export default class MediaItem {
 
     const response = await fetch(
       this.chunks[this.currentChunkIndex + 1],
-      this.fetchOptions
+      MediaItem.fetchOptions
     );
 
     if (!response.ok) {
