@@ -1,3 +1,4 @@
+import Logger from './logger';
 import MediaItem from './media-item';
 
 const AudioContextImpl: typeof AudioContext =
@@ -13,9 +14,11 @@ export class Player {
   private playWhenReady = false;
   private bufferTicker?: number;
   private bufferSizeSeconds: number;
+  private logger?: Logger;
 
-  constructor(bufferSizeSeconds: number) {
+  constructor(bufferSizeSeconds: number, logger?: Logger) {
     this.bufferSizeSeconds = bufferSizeSeconds;
+    this.logger = logger;
     this.gainNode.gain.value = 1.0;
     this.gainNode.connect(this.context.destination);
   }
@@ -66,24 +69,24 @@ export class Player {
     this.buffering = true;
     if (this.playlist.length < 1) {
       this.buffering = false;
-      console.log('all media items in the playlist have finished buffering');
+      this.logger?.info('all items in the playlist have finished buffering');
       return;
     }
 
     const remaining = this.nextChunkStartTime - this.context.currentTime;
     if (remaining > this.bufferSizeSeconds) {
-      console.log('buffered duration exceeds the requested buffer size');
+      this.logger?.debug('buffered duration exceeds the requested buffer size');
       this.scheduleBufferTicker();
       return;
     }
 
     if (!this.playlist[0].isInitialized()) {
-      console.log('init media item');
+      this.logger?.debug('init media item');
       await this.playlist[0].initialize();
     }
 
     if (!this.playlist[0].hasNextChunk()) {
-      console.log('finished media item');
+      this.logger?.info('finished media item');
       this.playlist.shift();
       this.scheduleBufferTicker();
       return;
@@ -91,7 +94,7 @@ export class Player {
 
     const chunk = await this.playlist[0].getNextChunk();
     await this.appendToAudioContext(chunk);
-    console.log('appended to audio context');
+    this.logger?.debug('appended chunk to audio context');
 
     if (this.playWhenReady && this.context.state === 'suspended') {
       this.context.resume();
@@ -110,7 +113,7 @@ export class Player {
     source.buffer = buffer;
     source.onended = () => {
       source.disconnect();
-      console.log('finished chunk');
+      this.logger?.debug('finished playing chunk');
     };
 
     if (this.nextChunkStartTime < this.context.currentTime) {

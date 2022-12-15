@@ -1,9 +1,15 @@
 import { Player } from '../src/player';
 
 function main() {
-  const player = new Player(15);
-  player.addMediaItem('static/1/index.jan');
-  player.addMediaItem('static/2/index.jan');
+  const player = new Player(15, console);
+  player.addMediaItem(
+    'https://cdn.staging.trynoice.com/library/segments/birds/birds_3_birds_3/128k/index.jan'
+  );
+
+  player.addMediaItem(
+    'https://cdn.staging.trynoice.com/library/segments/birds/birds_3/128k/index.jan'
+  );
+
   document
     .querySelector('#play')
     ?.addEventListener('click', () => player.play());
