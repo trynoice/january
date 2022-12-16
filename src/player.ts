@@ -58,6 +58,24 @@ export class Player {
     this.gainNode.gain.value = volume;
   }
 
+  public fadeTo(volume: number, duration: number): void {
+    if (this.context.state !== 'running') {
+      this.setVolume(volume);
+      return;
+    }
+
+    // value must always be positive for whatever reasons.
+    // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
+    const toVolume = Math.max(Number.EPSILON, volume);
+    const fromVolume = this.gainNode.gain.value;
+    this.gainNode.gain.cancelScheduledValues(this.context.currentTime);
+    this.gainNode.gain.setValueAtTime(fromVolume, this.context.currentTime);
+    this.gainNode.gain.linearRampToValueAtTime(
+      toVolume,
+      this.context.currentTime + duration
+    );
+  }
+
   public addMediaItem(src: string): void {
     this.playlist.push(new MediaItem(src));
     if (this.playWhenReady && !this.buffering) {

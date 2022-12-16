@@ -21,6 +21,14 @@ function main() {
   document
     .querySelector('#stop')
     ?.addEventListener('click', () => player.stop());
+
+  document
+    .querySelector('#mute')
+    ?.addEventListener('click', () => player.fadeTo(0, 5));
+
+  document
+    .querySelector('#unmute')
+    ?.addEventListener('click', () => player.fadeTo(1, 5));
 }
 
 document.addEventListener('DOMContentLoaded', () => main());
