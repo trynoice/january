@@ -36,11 +36,15 @@ function main() {
 
   document
     .querySelector('#mute')
-    ?.addEventListener('click', () => player.fadeTo(0, 5));
+    ?.addEventListener('click', () =>
+      player.fadeTo(0, 5, () => console.log('mute callback invoked'))
+    );
 
   document
     .querySelector('#unmute')
-    ?.addEventListener('click', () => player.fadeTo(1, 5));
+    ?.addEventListener('click', () =>
+      player.fadeTo(1, 5, () => console.log('unmute callback invoked'))
+    );
 }
 
 document.addEventListener('DOMContentLoaded', () => main());

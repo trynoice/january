@@ -17,7 +17,9 @@ export class Player {
   private buffering = false;
   private nextChunkStartTime = this.context.currentTime;
   private playWhenReady = false;
+  private volume = 1.0;
   private bufferTicker?: number;
+  private fadeCallbackTimeout?: number;
 
   private readonly bufferSizeSeconds: number;
   private readonly dataSource: PlayerDataSource;
@@ -31,7 +33,6 @@ export class Player {
     this.bufferSizeSeconds = bufferSizeSeconds;
     this.dataSource = dataSource;
     this.logger = logger;
-    this.gainNode.gain.value = 1.0;
     this.gainNode.connect(this.context.destination);
   }
 
@@ -46,12 +47,14 @@ export class Player {
     }
 
     if (this.context.state === 'suspended') {
+      this.setGain(this.volume);
       await this.context.resume();
     }
   }
 
   public async pause() {
     this.playWhenReady = false;
+    clearTimeout(this.fadeCallbackTimeout);
     if (this.context.state === 'running') {
       await this.context.suspend();
     }
@@ -66,26 +69,38 @@ export class Player {
     }
   }
 
-  public setVolume(volume: number): void {
-    this.gainNode.gain.value = volume;
+  private setGain(gain: number) {
+    this.gainNode.gain
+      .cancelScheduledValues(this.context.currentTime)
+      .setValueAtTime(gain, this.context.currentTime);
   }
 
-  public fadeTo(volume: number, duration: number): void {
+  public fadeTo(
+    volume: number,
+    durationSeconds: number,
+    callback?: () => void
+  ): void {
+    this.volume = volume;
+    clearTimeout(this.fadeCallbackTimeout);
     if (this.context.state !== 'running') {
-      this.setVolume(volume);
+      this.setGain(volume);
+      callback?.apply(undefined);
       return;
     }
 
     // value must always be positive for whatever reasons.
     // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
     const toVolume = Math.max(Number.EPSILON, volume);
-    const fromVolume = this.gainNode.gain.value;
-    this.gainNode.gain.cancelScheduledValues(this.context.currentTime);
-    this.gainNode.gain.setValueAtTime(fromVolume, this.context.currentTime);
-    this.gainNode.gain.linearRampToValueAtTime(
-      toVolume,
-      this.context.currentTime + duration
-    );
+    this.gainNode.gain
+      .cancelScheduledValues(this.context.currentTime)
+      .linearRampToValueAtTime(
+        toVolume,
+        this.context.currentTime + durationSeconds
+      );
+
+    if (callback != null) {
+      this.fadeCallbackTimeout = setTimeout(callback, durationSeconds * 1000);
+    }
   }
 
   public addMediaItem(src: string): void {
