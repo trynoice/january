@@ -1,7 +1,19 @@
 import { Player } from '../src/player';
+import type { PlayerDataSource } from '../src/player';
+
+class HttpPlayerDataSource implements PlayerDataSource {
+  async load(url: string): Promise<ArrayBuffer> | never {
+    const response = await fetch(url, { credentials: 'include' });
+    if (!response.ok) {
+      throw new Error(`failed to load data from ${url}`);
+    }
+
+    return await response.arrayBuffer();
+  }
+}
 
 function main() {
-  const player = new Player(15, console);
+  const player = new Player(15, new HttpPlayerDataSource(), console);
   player.addMediaItem(
     'https://cdn.staging.trynoice.com/library/segments/birds/birds_3_birds_3/128k/index.jan'
   );

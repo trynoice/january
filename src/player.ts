@@ -1,23 +1,35 @@
-import Logger from './logger';
-import MediaItem from './media-item';
+import type Logger from './logger';
 
 const AudioContextImpl: typeof AudioContext =
   window.AudioContext || window.webkitAudioContext;
 
+export interface PlayerDataSource {
+  load(url: string): Promise<ArrayBuffer> | never;
+}
+
 export class Player {
+  private readonly textDecoder = new TextDecoder();
   private readonly context: AudioContext = new AudioContextImpl();
   private readonly gainNode = this.context.createGain();
+  private readonly playlist: string[] = [];
+  private readonly chunkList: string[] = [];
 
-  private playlist: MediaItem[] = [];
   private buffering = false;
   private nextChunkStartTime = this.context.currentTime;
   private playWhenReady = false;
   private bufferTicker?: number;
-  private bufferSizeSeconds: number;
-  private logger?: Logger;
 
-  constructor(bufferSizeSeconds: number, logger?: Logger) {
+  private readonly bufferSizeSeconds: number;
+  private readonly dataSource: PlayerDataSource;
+  private readonly logger?: Logger;
+
+  constructor(
+    bufferSizeSeconds: number,
+    dataSource: PlayerDataSource,
+    logger?: Logger
+  ) {
     this.bufferSizeSeconds = bufferSizeSeconds;
+    this.dataSource = dataSource;
     this.logger = logger;
     this.gainNode.gain.value = 1.0;
     this.gainNode.connect(this.context.destination);
@@ -77,7 +89,7 @@ export class Player {
   }
 
   public addMediaItem(src: string): void {
-    this.playlist.push(new MediaItem(src));
+    this.playlist.push(src);
     if (this.playWhenReady && !this.buffering) {
       this.scheduleBufferTicker();
     }
@@ -85,7 +97,7 @@ export class Player {
 
   private async buffer() {
     this.buffering = true;
-    if (this.playlist.length < 1) {
+    if (this.playlist.length < 1 && this.chunkList.length < 1) {
       this.buffering = false;
       this.logger?.info('all items in the playlist have finished buffering');
       return;
@@ -98,19 +110,23 @@ export class Player {
       return;
     }
 
-    if (!this.playlist[0].isInitialized()) {
-      this.logger?.debug('init media item');
-      await this.playlist[0].initialize();
+    if (this.chunkList.length < 1) {
+      this.logger?.info('loading chunk list for the next media item');
+      const mediaItemUrl = this.playlist.shift() ?? '';
+
+      try {
+        this.chunkList.push(...(await this.loadChunkList(mediaItemUrl)));
+      } catch (error) {
+        this.logger?.warn('failed to load chunk list for media item', error);
+      }
     }
 
-    if (!this.playlist[0].hasNextChunk()) {
-      this.logger?.info('finished media item');
-      this.playlist.shift();
-      this.scheduleBufferTicker();
+    const nextChunkUrl = this.chunkList.shift();
+    if (nextChunkUrl == null) {
       return;
     }
 
-    const chunk = await this.playlist[0].getNextChunk();
+    const chunk = await this.dataSource.load(nextChunkUrl);
     await this.appendToAudioContext(chunk);
     this.logger?.debug('appended chunk to audio context');
 
@@ -122,7 +138,18 @@ export class Player {
   }
 
   private scheduleBufferTicker() {
-    this.bufferTicker = setTimeout(() => this.buffer(), 500);
+    this.bufferTicker = setTimeout(() => this.buffer(), 1000);
+  }
+
+  private async loadChunkList(url: string): Promise<string[]> {
+    const baseUrl = url.substring(0, url.lastIndexOf('/'));
+    return this.textDecoder
+      .decode(await this.dataSource.load(url))
+      .trim()
+      .split('\n')
+      .map((v) => v.trim())
+      .filter((v) => v != null && v.length > 0)
+      .map((v) => `${baseUrl}/${v}`);
   }
 
   private async appendToAudioContext(chunk: ArrayBuffer) {
