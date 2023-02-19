@@ -143,13 +143,22 @@ export class MediaPlayer extends EventTarget {
     }
 
     const nextChunkUrl = this.chunkList.shift();
-    if (nextChunkUrl == null) {
-      return;
+
+    // do not return without scheduling buffer ticker if the next chunk url is
+    // absent. Otherwise, it might be possible that there were media items in
+    // the playlist, but the buffering stopped because the player failed to load
+    // chunk list for a previous media item and the buffer ticker stopped since
+    // it didn't have more chunks to load.
+    if (nextChunkUrl != null) {
+      try {
+        const chunk = await this.dataSource.load(nextChunkUrl);
+        await this.appendToAudioContext(chunk, this.chunkList.length === 0);
+        this.logger?.debug('appended chunk to audio context');
+      } catch (error) {
+        this.logger?.warn('failed to load a chunk for the media item', error);
+      }
     }
 
-    const chunk = await this.dataSource.load(nextChunkUrl);
-    await this.appendToAudioContext(chunk, this.chunkList.length === 0);
-    this.logger?.debug('appended chunk to audio context');
     this.scheduleBufferTicker();
   }
 
