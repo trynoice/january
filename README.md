@@ -5,6 +5,9 @@
 </p>
 <h1 align="center">Noice January</h1>
 
+[![Node.js](https://github.com/trynoice/january/actions/workflows/node.yaml/badge.svg)](https://github.com/trynoice/january/actions/workflows/node.yaml)
+[![codecov](https://codecov.io/gh/trynoice/january/branch/main/graph/badge.svg?token=GK8SRBTHY3)](https://codecov.io/gh/trynoice/january)
+
 Common APIs used by Noice Web applications for gapless audio playback.
 
 ## How it works?

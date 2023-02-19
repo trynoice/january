@@ -1,16 +1,31 @@
-name: January Example
+name: Node.js
 on:
   push:
     branches: ["main"]
 
 jobs:
-  build:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version-file: ".node-version"
+      - run: |
+          npm install
+          npm run test
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+
+  build-example:
+    name: Build Example
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: ".node-version"
       - run: |
           npm install
           npm run build-example
@@ -18,7 +33,8 @@ jobs:
         with:
           path: dist/
 
-  deploy:
+  deploy-example:
+    name: Deploy Example
     permissions:
       contents: read
       pages: write
@@ -27,7 +43,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-example
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

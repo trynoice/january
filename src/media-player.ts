@@ -20,8 +20,8 @@ export class MediaPlayer extends EventTarget {
   private nextChunkStartTime = this.context.currentTime;
   private playWhenReady = false;
   private volume = 1.0;
-  private bufferTicker?: number;
-  private fadeCallbackTimeout?: number;
+  private bufferTicker?: ReturnType<typeof setTimeout>;
+  private fadeCallbackTimeout?: ReturnType<typeof setTimeout>;
 
   private readonly bufferSizeSeconds: number;
   private readonly dataSource: MediaPlayerDataSource;
