@@ -7,7 +7,9 @@ export interface PlayerDataSource {
   load(url: string): Promise<ArrayBuffer> | never;
 }
 
-export class Player {
+export class Player extends EventTarget {
+  public static readonly EVENT_MEDIA_ITEM_TRANSITION = 'mediaitemtransition';
+
   private readonly textDecoder = new TextDecoder();
   private readonly context: AudioContext = new AudioContextImpl();
   private readonly gainNode = this.context.createGain();
@@ -30,6 +32,7 @@ export class Player {
     dataSource: PlayerDataSource,
     logger?: Logger
   ) {
+    super();
     this.bufferSizeSeconds = bufferSizeSeconds;
     this.dataSource = dataSource;
     this.logger = logger;
@@ -49,6 +52,9 @@ export class Player {
     if (this.context.state === 'suspended') {
       this.setGain(this.volume);
       await this.context.resume();
+      if (this.chunkList.length === 0) {
+        this.dispatchEvent(new Event(Player.EVENT_MEDIA_ITEM_TRANSITION));
+      }
     }
   }
 
@@ -142,13 +148,8 @@ export class Player {
     }
 
     const chunk = await this.dataSource.load(nextChunkUrl);
-    await this.appendToAudioContext(chunk);
+    await this.appendToAudioContext(chunk, this.chunkList.length === 0);
     this.logger?.debug('appended chunk to audio context');
-
-    if (this.playWhenReady && this.context.state === 'suspended') {
-      this.context.resume();
-    }
-
     this.scheduleBufferTicker();
   }
 
@@ -167,14 +168,18 @@ export class Player {
       .map((v) => `${baseUrl}/${v}`);
   }
 
-  private async appendToAudioContext(chunk: ArrayBuffer) {
+  private async appendToAudioContext(chunk: ArrayBuffer, isLastChunk: boolean) {
     const buffer = await this.context.decodeAudioData(chunk);
     const source = this.context.createBufferSource();
     source.buffer = buffer;
-    source.onended = () => {
-      source.disconnect();
+    source.addEventListener('ended', () => {
       this.logger?.debug('finished playing chunk');
-    };
+      if (isLastChunk) {
+        this.dispatchEvent(new Event(Player.EVENT_MEDIA_ITEM_TRANSITION));
+      }
+
+      source.disconnect();
+    });
 
     if (this.nextChunkStartTime < this.context.currentTime) {
       this.nextChunkStartTime = this.context.currentTime;

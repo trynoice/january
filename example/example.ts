@@ -14,6 +14,10 @@ class HttpPlayerDataSource implements PlayerDataSource {
 
 function main() {
   const player = new Player(15, new HttpPlayerDataSource(), console);
+  player.addEventListener(Player.EVENT_MEDIA_ITEM_TRANSITION, () =>
+    console.info('media item transitioned')
+  );
+
   player.addMediaItem(
     'https://cdn.staging.trynoice.com/library/segments/birds/birds_3_birds_3/128k/index.jan'
   );
