@@ -1,7 +1,7 @@
-import { Player } from '../src/player';
-import type { PlayerDataSource } from '../src/player';
+import { MediaPlayer } from '../src/media-player';
+import type { MediaPlayerDataSource } from '../src/media-player';
 
-class HttpPlayerDataSource implements PlayerDataSource {
+class HttpMediaPlayerDataSource implements MediaPlayerDataSource {
   async load(url: string): Promise<ArrayBuffer> | never {
     const response = await fetch(url, { credentials: 'include' });
     if (!response.ok) {
@@ -13,8 +13,8 @@ class HttpPlayerDataSource implements PlayerDataSource {
 }
 
 function main() {
-  const player = new Player(15, new HttpPlayerDataSource(), console);
-  player.addEventListener(Player.EVENT_MEDIA_ITEM_TRANSITION, () =>
+  const player = new MediaPlayer(15, new HttpMediaPlayerDataSource(), console);
+  player.addEventListener(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION, () =>
     console.info('media item transitioned')
   );
 

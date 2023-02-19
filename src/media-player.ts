@@ -3,11 +3,11 @@ import type Logger from './logger';
 const AudioContextImpl: typeof AudioContext =
   window.AudioContext || window.webkitAudioContext;
 
-export interface PlayerDataSource {
+export interface MediaPlayerDataSource {
   load(url: string): Promise<ArrayBuffer> | never;
 }
 
-export class Player extends EventTarget {
+export class MediaPlayer extends EventTarget {
   public static readonly EVENT_MEDIA_ITEM_TRANSITION = 'mediaitemtransition';
 
   private readonly textDecoder = new TextDecoder();
@@ -24,12 +24,12 @@ export class Player extends EventTarget {
   private fadeCallbackTimeout?: number;
 
   private readonly bufferSizeSeconds: number;
-  private readonly dataSource: PlayerDataSource;
+  private readonly dataSource: MediaPlayerDataSource;
   private readonly logger?: Logger;
 
   constructor(
     bufferSizeSeconds: number,
-    dataSource: PlayerDataSource,
+    dataSource: MediaPlayerDataSource,
     logger?: Logger
   ) {
     super();
@@ -53,7 +53,7 @@ export class Player extends EventTarget {
       this.setGain(this.volume);
       await this.context.resume();
       if (this.chunkList.length === 0) {
-        this.dispatchEvent(new Event(Player.EVENT_MEDIA_ITEM_TRANSITION));
+        this.dispatchEvent(new Event(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION));
       }
     }
   }
@@ -175,7 +175,7 @@ export class Player extends EventTarget {
     source.addEventListener('ended', () => {
       this.logger?.debug('finished playing chunk');
       if (isLastChunk) {
-        this.dispatchEvent(new Event(Player.EVENT_MEDIA_ITEM_TRANSITION));
+        this.dispatchEvent(new Event(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION));
       }
 
       source.disconnect();

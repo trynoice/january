@@ -1,1 +1,1 @@
-export { Player } from './player';
+export { MediaPlayer } from './media-player';
