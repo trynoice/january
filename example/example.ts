@@ -1,5 +1,5 @@
-import { MediaPlayer } from '../src/media-player';
-import type { MediaPlayerDataSource } from '../src/media-player';
+import { MediaPlayer } from '../src/web/media-player';
+import type { MediaPlayerDataSource } from '../src/web/media-player';
 
 class HttpMediaPlayerDataSource implements MediaPlayerDataSource {
   async load(url: string): Promise<ArrayBuffer> | never {
@@ -18,13 +18,8 @@ function main() {
     console.info('media item transitioned')
   );
 
-  player.addMediaItem(
-    'https://cdn.staging.trynoice.com/library/segments/birds/birds_3_birds_3/128k/index.jan'
-  );
-
-  player.addMediaItem(
-    'https://cdn.staging.trynoice.com/library/segments/birds/birds_3/128k/index.jan'
-  );
+  player.addMediaItem('static/1/index.jan');
+  player.addMediaItem('static/2/index.jan');
 
   document
     .querySelector('#play')

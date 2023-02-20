@@ -1,1 +1,1 @@
-export { MediaPlayer } from './media-player';
+export { MediaPlayer } from './web/media-player';

@@ -1,7 +1,5 @@
-import type Logger from './logger';
-
-const AudioContextImpl: typeof AudioContext =
-  window.AudioContext || window.webkitAudioContext;
+import type Logger from '../utils/logger';
+import AudioContextDelegate from './audio-context-delegate';
 
 export interface MediaPlayerDataSource {
   load(url: string): Promise<ArrayBuffer> | never;
@@ -11,13 +9,13 @@ export class MediaPlayer extends EventTarget {
   public static readonly EVENT_MEDIA_ITEM_TRANSITION = 'mediaitemtransition';
 
   private readonly textDecoder = new TextDecoder();
-  private readonly context: AudioContext = new AudioContextImpl();
+  private readonly context = new AudioContextDelegate();
   private readonly gainNode = this.context.createGain();
   private readonly playlist: string[] = [];
   private readonly chunkList: string[] = [];
 
   private buffering = false;
-  private nextChunkStartTime = this.context.currentTime;
+  private nextChunkStartTime: number = this.context.currentTime();
   private playWhenReady = false;
   private volume = 1.0;
   private bufferTicker?: ReturnType<typeof setTimeout>;
@@ -36,20 +34,20 @@ export class MediaPlayer extends EventTarget {
     this.bufferSizeSeconds = bufferSizeSeconds;
     this.dataSource = dataSource;
     this.logger = logger;
-    this.gainNode.connect(this.context.destination);
+    this.gainNode.connect(this.context.destination());
   }
 
   public async play() {
-    if (this.context.state === 'closed') {
+    if (this.context.state() === 'closed') {
       throw new Error('attempted to restarted stopped player');
     }
 
     this.playWhenReady = true;
     if (!this.buffering) {
-      this.scheduleBufferTicker();
+      this.buffer();
     }
 
-    if (this.context.state === 'suspended') {
+    if (this.context.state() === 'suspended') {
       this.setGain(this.volume);
       await this.context.resume();
       if (this.chunkList.length === 0) {
@@ -61,7 +59,7 @@ export class MediaPlayer extends EventTarget {
   public async pause() {
     this.playWhenReady = false;
     clearTimeout(this.fadeCallbackTimeout);
-    if (this.context.state === 'running') {
+    if (this.context.state() === 'running') {
       await this.context.suspend();
     }
   }
@@ -70,15 +68,15 @@ export class MediaPlayer extends EventTarget {
     this.buffering = false;
     clearTimeout(this.bufferTicker);
     await this.pause();
-    if (this.context.state !== 'closed') {
+    if (this.context.state() !== 'closed') {
       await this.context.close();
     }
   }
 
   private setGain(gain: number) {
     this.gainNode.gain
-      .cancelScheduledValues(this.context.currentTime)
-      .setValueAtTime(gain, this.context.currentTime);
+      .cancelScheduledValues(this.context.currentTime())
+      .setValueAtTime(gain, this.context.currentTime());
   }
 
   public fadeTo(
@@ -88,7 +86,7 @@ export class MediaPlayer extends EventTarget {
   ): void {
     this.volume = volume;
     clearTimeout(this.fadeCallbackTimeout);
-    if (this.context.state !== 'running') {
+    if (this.context.state() !== 'running') {
       this.setGain(volume);
       callback?.apply(undefined);
       return;
@@ -98,10 +96,10 @@ export class MediaPlayer extends EventTarget {
     // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
     const toVolume = Math.max(Number.EPSILON, volume);
     this.gainNode.gain
-      .cancelScheduledValues(this.context.currentTime)
+      .cancelScheduledValues(this.context.currentTime())
       .linearRampToValueAtTime(
         toVolume,
-        this.context.currentTime + durationSeconds
+        this.context.currentTime() + durationSeconds
       );
 
     if (callback != null) {
@@ -124,7 +122,7 @@ export class MediaPlayer extends EventTarget {
       return;
     }
 
-    const remaining = this.nextChunkStartTime - this.context.currentTime;
+    const remaining = this.nextChunkStartTime - this.context.currentTime();
     if (remaining > this.bufferSizeSeconds) {
       this.logger?.debug('buffered duration exceeds the requested buffer size');
       this.scheduleBufferTicker();
@@ -190,8 +188,8 @@ export class MediaPlayer extends EventTarget {
       source.disconnect();
     });
 
-    if (this.nextChunkStartTime < this.context.currentTime) {
-      this.nextChunkStartTime = this.context.currentTime;
+    if (this.nextChunkStartTime < this.context.currentTime()) {
+      this.nextChunkStartTime = this.context.currentTime();
     }
 
     source.connect(this.gainNode);

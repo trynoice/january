@@ -6,7 +6,7 @@
     "dev": "parcel example/example.html example/static/**/*",
     "build": "tsc",
     "build-example": "parcel build --public-url ./ example/example.html example/static/**/*",
-    "clean": "rm -rf dist .parcel-cache",
+    "clean": "rm -rf coverage dist .parcel-cache",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
     "prepare": "tsc",
