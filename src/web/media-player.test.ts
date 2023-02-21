@@ -1,4 +1,4 @@
-import { MediaPlayer } from './media-player';
+import MediaPlayer from './media-player';
 
 const mockGainNode = {
   connect: jest.fn(),
@@ -38,17 +38,9 @@ const mockAudioContextDelegate = {
   suspend: jest.fn(),
 };
 
-const mockDataSource = {
-  load: jest.fn(),
+const mockHttpClient = {
+  get: jest.fn(),
 };
-
-const mockTextDecoder = {
-  decode: jest.fn(),
-};
-
-global.TextDecoder = function () {
-  return mockTextDecoder;
-} as unknown as typeof TextDecoder;
 
 jest.mock('./audio-context-delegate', () => {
   return function () {
@@ -73,14 +65,13 @@ test('MediaPlayer', async () => {
     .mockResolvedValueOnce(firstAudioBuffer)
     .mockResolvedValue(nextAudioBuffer);
 
-  mockTextDecoder.decode.mockReturnValueOnce('0000.mp3\n0001.mp3');
-  mockDataSource.load
-    .mockReturnValueOnce(new ArrayBuffer(0))
-    .mockReturnValueOnce(firstChunk)
-    .mockReturnValue(nextChunk);
+  mockHttpClient.get
+    .mockResolvedValueOnce(buildMockResponse('0000.mp3\n0001.mp3'))
+    .mockResolvedValueOnce(buildMockResponse(firstChunk))
+    .mockResolvedValue(buildMockResponse(nextChunk));
 
   const mediaItemTransitionCallback = jest.fn();
-  const player = new MediaPlayer(20, mockDataSource);
+  const player = new MediaPlayer(20, mockHttpClient);
   player.addEventListener(
     MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION,
     mediaItemTransitionCallback
@@ -103,7 +94,7 @@ test('MediaPlayer', async () => {
 
   // check buffer ticker
   await waitFor(1010); // just a little more than the buffer ticker
-  expect(mockDataSource.load).toBeCalledWith('test/0001.mp3');
+  expect(mockHttpClient.get).toBeCalledWith('test/0001.mp3');
 
   // check media item transition event.
   const last = mockBufferSource.addEventListener.mock.lastCall;
@@ -131,4 +122,12 @@ async function waitFor(durationMillis: number) {
 
 async function flushPromises() {
   await waitFor(0);
+}
+
+function buildMockResponse(body: unknown) {
+  return {
+    ok: true,
+    arrayBuffer: () => body,
+    text: () => body,
+  };
 }

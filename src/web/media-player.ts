@@ -1,14 +1,10 @@
 import type Logger from '../utils/logger';
 import AudioContextDelegate from './audio-context-delegate';
+import HttpClient from './http-client';
 
-export interface MediaPlayerDataSource {
-  load(url: string): Promise<ArrayBuffer> | never;
-}
-
-export class MediaPlayer extends EventTarget {
+export default class MediaPlayer extends EventTarget {
   public static readonly EVENT_MEDIA_ITEM_TRANSITION = 'mediaitemtransition';
 
-  private readonly textDecoder = new TextDecoder();
   private readonly context = new AudioContextDelegate();
   private readonly gainNode = this.context.createGain();
   private readonly playlist: string[] = [];
@@ -22,17 +18,17 @@ export class MediaPlayer extends EventTarget {
   private fadeCallbackTimeout?: ReturnType<typeof setTimeout>;
 
   private readonly bufferSizeSeconds: number;
-  private readonly dataSource: MediaPlayerDataSource;
+  private readonly httpClient: HttpClient;
   private readonly logger?: Logger;
 
   constructor(
     bufferSizeSeconds: number,
-    dataSource: MediaPlayerDataSource,
+    httpClient: HttpClient,
     logger?: Logger
   ) {
     super();
     this.bufferSizeSeconds = bufferSizeSeconds;
-    this.dataSource = dataSource;
+    this.httpClient = httpClient;
     this.logger = logger;
     this.gainNode.connect(this.context.destination());
   }
@@ -149,7 +145,12 @@ export class MediaPlayer extends EventTarget {
     // it didn't have more chunks to load.
     if (nextChunkUrl != null) {
       try {
-        const chunk = await this.dataSource.load(nextChunkUrl);
+        const response = await this.httpClient.get(nextChunkUrl);
+        if (!response.ok) {
+          throw new Error(`http error: ${response.status}`);
+        }
+
+        const chunk = await response.arrayBuffer();
         await this.appendToAudioContext(chunk, this.chunkList.length === 0);
         this.logger?.debug('appended chunk to audio context');
       } catch (error) {
@@ -166,8 +167,12 @@ export class MediaPlayer extends EventTarget {
 
   private async loadChunkList(url: string): Promise<string[]> {
     const baseUrl = url.substring(0, url.lastIndexOf('/'));
-    return this.textDecoder
-      .decode(await this.dataSource.load(url))
+    const response = await this.httpClient.get(url);
+    if (!response.ok) {
+      throw new Error(`http error: ${response.status}`);
+    }
+
+    return (await response.text())
       .trim()
       .split('\n')
       .map((v) => v.trim())

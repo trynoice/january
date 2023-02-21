@@ -1,1 +1,1 @@
-export { MediaPlayer } from './web/media-player';
+export { default as MediaPlayer } from './web/media-player';

@@ -1,19 +1,14 @@
-import { MediaPlayer } from '../src/web/media-player';
-import type { MediaPlayerDataSource } from '../src/web/media-player';
+import MediaPlayer from '../src/web/media-player';
+import type HttpClient from '../src/web/http-client';
 
-class HttpMediaPlayerDataSource implements MediaPlayerDataSource {
-  async load(url: string): Promise<ArrayBuffer> | never {
-    const response = await fetch(url, { credentials: 'include' });
-    if (!response.ok) {
-      throw new Error(`failed to load data from ${url}`);
-    }
-
-    return await response.arrayBuffer();
+class SimpleHttpClient implements HttpClient {
+  get(url: string): Promise<Response> {
+    return fetch(url, { credentials: 'include' });
   }
 }
 
 function main() {
-  const player = new MediaPlayer(15, new HttpMediaPlayerDataSource(), console);
+  const player = new MediaPlayer(15, new SimpleHttpClient(), console);
   player.addEventListener(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION, () =>
     console.info('media item transitioned')
   );
