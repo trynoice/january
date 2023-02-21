@@ -1,5 +1,5 @@
-import MediaPlayer from '../src/web/media-player';
-import type HttpClient from '../src/web/http-client';
+import type HttpClient from '../src/http-client';
+import MediaPlayer from '../src/media-player';
 
 class SimpleHttpClient implements HttpClient {
   get(url: string): Promise<Response> {

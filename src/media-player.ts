@@ -1,6 +1,6 @@
-import type Logger from '../utils/logger';
 import AudioContextDelegate from './audio-context-delegate';
 import HttpClient from './http-client';
+import type Logger from './logger';
 
 export default class MediaPlayer extends EventTarget {
   public static readonly EVENT_MEDIA_ITEM_TRANSITION = 'mediaitemtransition';

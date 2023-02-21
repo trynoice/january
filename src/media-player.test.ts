@@ -4,17 +4,17 @@ const mockGainNode = {
   connect: jest.fn(),
   gain: {
     value: 0,
-    cancelScheduledValues: jest.fn(function () {
+    cancelScheduledValues: function () {
       return this;
-    }),
-    setValueAtTime: jest.fn(function (value) {
+    },
+    setValueAtTime: function (value: number) {
       this.value = value;
       return this;
-    }),
-    linearRampToValueAtTime: jest.fn(function (value) {
+    },
+    linearRampToValueAtTime: function (value: number) {
       this.value = value;
       return this;
-    }),
+    },
   },
 };
 
@@ -28,8 +28,8 @@ const mockBufferSource = {
 
 const mockAudioContextDelegate = {
   close: jest.fn(),
-  createBufferSource: jest.fn(() => mockBufferSource),
-  createGain: jest.fn(() => mockGainNode),
+  createBufferSource: () => mockBufferSource,
+  createGain: () => mockGainNode,
   currentTime: jest.fn(),
   decodeAudioData: jest.fn(),
   destination: jest.fn(),
@@ -46,11 +46,6 @@ jest.mock('./audio-context-delegate', () => {
   return function () {
     return mockAudioContextDelegate;
   };
-});
-
-beforeEach(() => {
-  jest.clearAllMocks();
-  jest.clearAllTimers();
 });
 
 test('MediaPlayer', async () => {
