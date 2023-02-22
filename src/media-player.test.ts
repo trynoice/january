@@ -39,8 +39,8 @@ const mockAudioContextDelegate = {
   suspend: jest.fn(),
 };
 
-const mockHttpClient = {
-  get: jest.fn(),
+const mockCdnClient = {
+  getResource: jest.fn(),
 };
 
 jest.mock('./audio-context-delegate', () => {
@@ -61,13 +61,13 @@ test('MediaPlayer', async () => {
     .mockResolvedValueOnce(firstAudioBuffer)
     .mockResolvedValue(nextAudioBuffer);
 
-  mockHttpClient.get
+  mockCdnClient.getResource
     .mockResolvedValueOnce(buildMockResponse('0000.mp3\n0001.mp3\n0002.mp3'))
     .mockResolvedValueOnce(buildMockResponse(firstChunk))
     .mockResolvedValue(buildMockResponse(nextChunk));
 
   const mediaItemTransitionCallback = jest.fn();
-  const player = new MediaPlayer(20, mockHttpClient);
+  const player = new MediaPlayer(20, mockCdnClient);
   player.addEventListener(
     MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION,
     mediaItemTransitionCallback
@@ -90,16 +90,16 @@ test('MediaPlayer', async () => {
 
   // check buffer ticker
   await waitFor(2010); // just a little more than the 2x buffer ticker
-  expect(mockHttpClient.get).toBeCalledWith('test/0001.mp3');
-  expect(mockHttpClient.get).toBeCalledWith('test/0002.mp3');
+  expect(mockCdnClient.getResource).toBeCalledWith('test/0001.mp3');
+  expect(mockCdnClient.getResource).toBeCalledWith('test/0002.mp3');
 
-  mockHttpClient.get.mockClear();
+  mockCdnClient.getResource.mockClear();
   player.addToPlaylist('test-0/index.jan');
   player.clearPlaylist();
   await waitFor(1010); // wait for the buffer ticker to tick, if it was running
   expect(mockBufferSource.stop).toBeCalledTimes(3);
   expect(player.remainingItemCount()).toBe(0);
-  expect(mockHttpClient.get).not.toBeCalled();
+  expect(mockCdnClient.getResource).not.toBeCalled();
 
   // check media item transition event.
   // invoke ended listener all items.

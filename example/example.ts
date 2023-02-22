@@ -1,20 +1,31 @@
-import type HttpClient from '../src/http-client';
+import type CdnClient from '../src/cdn-client';
 import MediaPlayer from '../src/media-player';
 
-class SimpleHttpClient implements HttpClient {
-  get(url: string): Promise<Response> {
-    return fetch(url, { credentials: 'include' });
+class SimpleCdnClient implements CdnClient {
+  private static readonly CDN_BASE_URL =
+    process.env.NODE_ENV === 'production'
+      ? 'https://cdn.trynoice.com'
+      : 'https://cdn.staging.trynoice.com';
+
+  getResource(path: string): Promise<Response> {
+    return fetch(`${SimpleCdnClient.CDN_BASE_URL}/${path}`, {
+      credentials: 'include',
+    });
   }
 }
 
 function main() {
-  const player = new MediaPlayer(15, new SimpleHttpClient(), console);
+  const items = [
+    'library/segments/white_noise/white_noise/128k/index.jan',
+    'library/segments/white_noise/white_noise_white_noise/128k/index.jan',
+  ];
+
+  const player = new MediaPlayer(15, new SimpleCdnClient(), console);
   player.addEventListener(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION, () =>
     console.info('media item transitioned')
   );
 
-  player.addToPlaylist('static/1/index.jan');
-  player.addToPlaylist('static/2/index.jan');
+  items.forEach((item) => player.addToPlaylist(item));
 
   document
     .querySelector('#play')
@@ -47,7 +58,7 @@ function main() {
   document
     .querySelector('#addToPlaylist')
     ?.addEventListener('click', () =>
-      player.addToPlaylist('static/1/index.jan')
+      items.forEach((item) => player.addToPlaylist(item))
     );
 }
 

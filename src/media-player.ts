@@ -1,5 +1,5 @@
 import AudioContextDelegate from './audio-context-delegate';
-import HttpClient from './http-client';
+import CdnClient from './cdn-client';
 import type Logger from './logger';
 
 export default class MediaPlayer extends EventTarget {
@@ -19,17 +19,17 @@ export default class MediaPlayer extends EventTarget {
   private fadeCallbackTimeout?: ReturnType<typeof setTimeout>;
 
   private readonly bufferSizeSeconds: number;
-  private readonly httpClient: HttpClient;
+  private readonly cdnClient: CdnClient;
   private readonly logger?: Logger;
 
   constructor(
     bufferSizeSeconds: number,
-    httpClient: HttpClient,
+    cdnClient: CdnClient,
     logger?: Logger
   ) {
     super();
     this.bufferSizeSeconds = bufferSizeSeconds;
-    this.httpClient = httpClient;
+    this.cdnClient = cdnClient;
     this.logger = logger;
     this.gainNode.connect(this.context.destination());
     this.context.suspend();
@@ -137,25 +137,25 @@ export default class MediaPlayer extends EventTarget {
 
     if (this.chunkList.length < 1) {
       this.logger?.info('loading chunk list for the next media item');
-      const mediaItemUrl = this.playlist.shift() ?? '';
+      const mediaItemPath = this.playlist.shift() ?? '';
 
       try {
-        this.chunkList.push(...(await this.loadChunkList(mediaItemUrl)));
+        this.chunkList.push(...(await this.loadChunkList(mediaItemPath)));
       } catch (error) {
         this.logger?.warn('failed to load chunk list for media item', error);
       }
     }
 
-    const nextChunkUrl = this.chunkList.shift();
+    const nextChunkPath = this.chunkList.shift();
 
-    // do not return without scheduling buffer ticker if the next chunk url is
+    // do not return without scheduling buffer ticker if the next chunk path is
     // absent. Otherwise, it might be possible that there were media items in
     // the playlist, but the buffering stopped because the player failed to load
     // chunk list for a previous media item and the buffer ticker stopped since
     // it didn't have more chunks to load.
-    if (nextChunkUrl != null) {
+    if (nextChunkPath != null) {
       try {
-        const response = await this.httpClient.get(nextChunkUrl);
+        const response = await this.cdnClient.getResource(nextChunkPath);
         if (!response.ok) {
           throw new Error(`http error: ${response.status}`);
         }
@@ -175,9 +175,9 @@ export default class MediaPlayer extends EventTarget {
     this.bufferTicker = setTimeout(() => this.buffer(), 1000);
   }
 
-  private async loadChunkList(url: string): Promise<string[]> {
-    const baseUrl = url.substring(0, url.lastIndexOf('/'));
-    const response = await this.httpClient.get(url);
+  private async loadChunkList(path: string): Promise<string[]> {
+    const basePath = path.substring(0, path.lastIndexOf('/'));
+    const response = await this.cdnClient.getResource(path);
     if (!response.ok) {
       throw new Error(`http error: ${response.status}`);
     }
@@ -187,7 +187,7 @@ export default class MediaPlayer extends EventTarget {
       .split('\n')
       .map((v) => v.trim())
       .filter((v) => v != null && v.length > 0)
-      .map((v) => `${baseUrl}/${v}`);
+      .map((v) => `${basePath}/${v}`);
   }
 
   private async appendToAudioContext(chunk: ArrayBuffer, isLastChunk: boolean) {
