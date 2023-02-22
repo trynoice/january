@@ -9,6 +9,7 @@ export default class MediaPlayer extends EventTarget {
   private readonly gainNode = this.context.createGain();
   private readonly playlist: string[] = [];
   private readonly chunkList: string[] = [];
+  private readonly sourceNodes: AudioBufferSourceNode[] = [];
 
   private buffering = false;
   private nextChunkStartTime: number = this.context.currentTime();
@@ -31,6 +32,7 @@ export default class MediaPlayer extends EventTarget {
     this.httpClient = httpClient;
     this.logger = logger;
     this.gainNode.connect(this.context.destination());
+    this.context.suspend();
   }
 
   public async play() {
@@ -46,9 +48,6 @@ export default class MediaPlayer extends EventTarget {
     if (this.context.state() === 'suspended') {
       this.setGain(this.volume);
       await this.context.resume();
-      if (this.chunkList.length === 0) {
-        this.dispatchEvent(new Event(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION));
-      }
     }
   }
 
@@ -103,11 +102,22 @@ export default class MediaPlayer extends EventTarget {
     }
   }
 
-  public addMediaItem(src: string): void {
+  public addToPlaylist(src: string): void {
     this.playlist.push(src);
     if (this.playWhenReady && !this.buffering) {
-      this.scheduleBufferTicker();
+      this.buffer();
     }
+  }
+
+  public clearPlaylist() {
+    this.playlist.length = 0;
+    this.chunkList.length = 0;
+    this.sourceNodes.forEach((node) => node.stop()); // will dispatch ended event
+    this.nextChunkStartTime = this.context.currentTime();
+  }
+
+  public remainingItemCount(): number {
+    return this.playlist.length;
   }
 
   private async buffer() {
@@ -185,18 +195,24 @@ export default class MediaPlayer extends EventTarget {
     const source = this.context.createBufferSource();
     source.buffer = buffer;
     source.addEventListener('ended', () => {
+      source.disconnect();
+      this.sourceNodes.shift();
       this.logger?.debug('finished playing chunk');
       if (isLastChunk) {
         this.dispatchEvent(new Event(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION));
       }
-
-      source.disconnect();
     });
 
     if (this.nextChunkStartTime < this.context.currentTime()) {
       this.nextChunkStartTime = this.context.currentTime();
     }
 
+    if (this.sourceNodes.length === 0) {
+      // playback just started which is technically an item transition.
+      this.dispatchEvent(new Event(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION));
+    }
+
+    this.sourceNodes.push(source);
     source.connect(this.gainNode);
     source.start(this.nextChunkStartTime);
     this.nextChunkStartTime += buffer.duration;

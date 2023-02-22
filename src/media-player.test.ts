@@ -24,6 +24,7 @@ const mockBufferSource = {
   disconnect: jest.fn(),
   connect: jest.fn(),
   start: jest.fn(),
+  stop: jest.fn(),
 };
 
 const mockAudioContextDelegate = {
@@ -61,7 +62,7 @@ test('MediaPlayer', async () => {
     .mockResolvedValue(nextAudioBuffer);
 
   mockHttpClient.get
-    .mockResolvedValueOnce(buildMockResponse('0000.mp3\n0001.mp3'))
+    .mockResolvedValueOnce(buildMockResponse('0000.mp3\n0001.mp3\n0002.mp3'))
     .mockResolvedValueOnce(buildMockResponse(firstChunk))
     .mockResolvedValue(buildMockResponse(nextChunk));
 
@@ -72,7 +73,7 @@ test('MediaPlayer', async () => {
     mediaItemTransitionCallback
   );
 
-  player.addMediaItem('test/index.jan');
+  player.addToPlaylist('test/index.jan');
   await player.play();
 
   // not using fake timers because they're not working. Instead, exploit the
@@ -88,12 +89,21 @@ test('MediaPlayer', async () => {
   mockAudioContextDelegate.state.mockReturnValue('running');
 
   // check buffer ticker
-  await waitFor(1010); // just a little more than the buffer ticker
+  await waitFor(2010); // just a little more than the 2x buffer ticker
   expect(mockHttpClient.get).toBeCalledWith('test/0001.mp3');
+  expect(mockHttpClient.get).toBeCalledWith('test/0002.mp3');
+
+  mockHttpClient.get.mockClear();
+  player.addToPlaylist('test-0/index.jan');
+  player.clearPlaylist();
+  await waitFor(1010); // wait for the buffer ticker to tick, if it was running
+  expect(mockBufferSource.stop).toBeCalledTimes(3);
+  expect(player.remainingItemCount()).toBe(0);
+  expect(mockHttpClient.get).not.toBeCalled();
 
   // check media item transition event.
-  const last = mockBufferSource.addEventListener.mock.lastCall;
-  if (last != null) last[1]();
+  // invoke ended listener all items.
+  mockBufferSource.addEventListener.mock.calls.forEach((call) => call[1]());
   expect(mediaItemTransitionCallback).toBeCalledTimes(2); // start and end of the track
 
   // check fade callback

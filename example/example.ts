@@ -13,8 +13,8 @@ function main() {
     console.info('media item transitioned')
   );
 
-  player.addMediaItem('static/1/index.jan');
-  player.addMediaItem('static/2/index.jan');
+  player.addToPlaylist('static/1/index.jan');
+  player.addToPlaylist('static/2/index.jan');
 
   document
     .querySelector('#play')
@@ -38,6 +38,16 @@ function main() {
     .querySelector('#unmute')
     ?.addEventListener('click', () =>
       player.fadeTo(1, 5, () => console.log('unmute callback invoked'))
+    );
+
+  document
+    .querySelector('#clearPlaylist')
+    ?.addEventListener('click', () => player.clearPlaylist());
+
+  document
+    .querySelector('#addToPlaylist')
+    ?.addEventListener('click', () =>
+      player.addToPlaylist('static/1/index.jan')
     );
 }
 
