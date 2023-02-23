@@ -77,8 +77,8 @@ test('MediaPlayer', async () => {
   await player.play();
 
   // not using fake timers because they're not working. Instead, exploit the
-  // fact that play function enqueues the buffer loop as a promise without
-  // a timeout. So, ensure that it runs before making assertions.
+  // fact that play function enqueues the buffer loop with zero delay. So,
+  // ensure that it runs before making assertions.
   await flushPromises();
 
   expect(mockAudioContextDelegate.resume).toBeCalled();

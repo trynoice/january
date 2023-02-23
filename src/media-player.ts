@@ -11,16 +11,15 @@ export default class MediaPlayer extends EventTarget {
   private readonly chunkList: string[] = [];
   private readonly sourceNodes: AudioBufferSourceNode[] = [];
 
-  private buffering = false;
-  private nextChunkStartTime: number = this.context.currentTime();
-  private playWhenReady = false;
   private volume = 1.0;
-  private bufferTicker?: ReturnType<typeof setTimeout>;
-  private fadeCallbackTimeout?: ReturnType<typeof setTimeout>;
+  private nextChunkStartTime: number = this.context.currentTime();
 
   private readonly bufferSizeSeconds: number;
   private readonly cdnClient: CdnClient;
   private readonly logger?: Logger;
+
+  private bufferTicker?: ReturnType<typeof setTimeout>;
+  private fadeCallbackTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(
     bufferSizeSeconds: number,
@@ -40,11 +39,7 @@ export default class MediaPlayer extends EventTarget {
       throw new Error('attempted to restarted stopped player');
     }
 
-    this.playWhenReady = true;
-    if (!this.buffering) {
-      this.buffer();
-    }
-
+    this.scheduleBufferTicker(true);
     if (this.context.state() === 'suspended') {
       this.setGain(this.volume);
       await this.context.resume();
@@ -52,7 +47,6 @@ export default class MediaPlayer extends EventTarget {
   }
 
   public async pause() {
-    this.playWhenReady = false;
     clearTimeout(this.fadeCallbackTimeout);
     if (this.context.state() === 'running') {
       await this.context.suspend();
@@ -60,7 +54,6 @@ export default class MediaPlayer extends EventTarget {
   }
 
   public async stop() {
-    this.buffering = false;
     clearTimeout(this.bufferTicker);
     await this.pause();
     if (this.context.state() !== 'closed') {
@@ -104,8 +97,8 @@ export default class MediaPlayer extends EventTarget {
 
   public addToPlaylist(src: string): void {
     this.playlist.push(src);
-    if (this.playWhenReady && !this.buffering) {
-      this.buffer();
+    if (this.context.state() === 'running') {
+      this.scheduleBufferTicker(true);
     }
   }
 
@@ -121,9 +114,7 @@ export default class MediaPlayer extends EventTarget {
   }
 
   private async buffer() {
-    this.buffering = true;
     if (this.playlist.length < 1 && this.chunkList.length < 1) {
-      this.buffering = false;
       this.logger?.info('all items in the playlist have finished buffering');
       return;
     }
@@ -131,7 +122,7 @@ export default class MediaPlayer extends EventTarget {
     const remaining = this.nextChunkStartTime - this.context.currentTime();
     if (remaining > this.bufferSizeSeconds) {
       this.logger?.debug('buffered duration exceeds the requested buffer size');
-      this.scheduleBufferTicker();
+      this.scheduleBufferTicker(false);
       return;
     }
 
@@ -168,11 +159,12 @@ export default class MediaPlayer extends EventTarget {
       }
     }
 
-    this.scheduleBufferTicker();
+    this.scheduleBufferTicker(false);
   }
 
-  private scheduleBufferTicker() {
-    this.bufferTicker = setTimeout(() => this.buffer(), 1000);
+  private scheduleBufferTicker(immediate: boolean) {
+    clearTimeout(this.bufferTicker);
+    this.bufferTicker = setTimeout(() => this.buffer(), immediate ? 0 : 1000);
   }
 
   private async loadChunkList(path: string): Promise<string[]> {
