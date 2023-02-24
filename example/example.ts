@@ -1,5 +1,5 @@
 import type CdnClient from '../src/cdn-client';
-import { MediaPlayer } from '../src/media-player';
+import { SoundPlayer } from '../src/sound-player';
 
 class SimpleCdnClient implements CdnClient {
   private static readonly CDN_BASE_URL =
@@ -15,58 +15,33 @@ class SimpleCdnClient implements CdnClient {
 }
 
 function main() {
-  const items = [
-    'library/segments/white_noise/white_noise/128k/index.jan',
-    'library/segments/white_noise/white_noise_white_noise/128k/index.jan',
-  ];
-
-  const player = new MediaPlayer(15, new SimpleCdnClient(), console);
-  player.addEventListener(MediaPlayer.EVENT_ITEM_TRANSITION, () =>
-    console.info(
-      'playlist item transitioned, remaining:',
-      player.remainingItemCount()
-    )
-  );
-
-  player.addEventListener(MediaPlayer.EVENT_STATE_CHANGE, () =>
-    console.info('media player state changed:', player.getState())
-  );
-
-  items.forEach((item) => player.addToPlaylist(item));
-
-  document
-    .querySelector('#play')
-    ?.addEventListener('click', () => player.play());
-
-  document
-    .querySelector('#pause')
-    ?.addEventListener('click', () => player.pause());
-
-  document
-    .querySelector('#stop')
-    ?.addEventListener('click', () => player.stop());
-
-  document
-    .querySelector('#mute')
-    ?.addEventListener('click', () =>
-      player.fadeTo(0, 5, () => console.log('mute callback invoked'))
+  const cdnClient = new SimpleCdnClient();
+  ['rain', 'thunder'].forEach((soundId) => {
+    const player = new SoundPlayer(cdnClient, soundId, console);
+    player.addEventListener(SoundPlayer.EVENT_STATE_CHANGE, () =>
+      console.info(soundId, 'state change:', player.getState())
     );
 
-  document
-    .querySelector('#unmute')
-    ?.addEventListener('click', () =>
-      player.fadeTo(1, 5, () => console.log('unmute callback invoked'))
+    document
+      .querySelector(`#${soundId}Play`)
+      ?.addEventListener('click', () => player.play());
+
+    document
+      .querySelector(`#${soundId}Pause`)
+      ?.addEventListener('click', () => player.pause(false));
+
+    document
+      .querySelector(`#${soundId}Stop`)
+      ?.addEventListener('click', () => player.stop(false));
+
+    const slider: HTMLInputElement | null = document.querySelector(
+      `#${soundId}Volume`
     );
 
-  document
-    .querySelector('#clearPlaylist')
-    ?.addEventListener('click', () => player.clearPlaylist());
-
-  document
-    .querySelector('#addToPlaylist')
-    ?.addEventListener('click', () =>
-      items.forEach((item) => player.addToPlaylist(item))
+    slider?.addEventListener('input', () =>
+      player.setVolume(Number.parseInt(slider.value) / 25)
     );
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => main());

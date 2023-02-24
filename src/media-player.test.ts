@@ -102,7 +102,7 @@ test('MediaPlayer', async () => {
   player.clearPlaylist();
   await waitFor(1010); // wait for the buffer ticker to tick, if it was running
   expect(mockBufferSource.stop).toBeCalledTimes(3);
-  expect(player.remainingItemCount()).toBe(0);
+  expect(player.getMediaItemCount()).toBe(0);
   expect(mockCdnClient.getResource).not.toBeCalled();
 
   // check media player state and item transition event.

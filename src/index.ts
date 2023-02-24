@@ -1,1 +1,1 @@
-export { MediaPlayer } from './media-player';
+export { SoundPlayer, SoundPlayerState } from './sound-player';

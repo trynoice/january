@@ -23,6 +23,7 @@ export class MediaPlayer extends EventTarget {
   private state = MediaPlayerState.Paused;
   private volume = 1.0;
   private nextChunkStartTime: number = this.context.currentTime();
+  private mediaItemCount = 0;
 
   private readonly bufferSizeSeconds: number;
   private readonly cdnClient: CdnClient;
@@ -55,7 +56,7 @@ export class MediaPlayer extends EventTarget {
 
     this.scheduleBufferTicker(true);
     if (this.context.state() === 'suspended') {
-      this.setGain(this.volume);
+      this.setVolume(this.volume);
       await this.context.resume();
     }
 
@@ -87,10 +88,11 @@ export class MediaPlayer extends EventTarget {
     this.setState(MediaPlayerState.Stopped);
   }
 
-  private setGain(gain: number) {
+  public setVolume(volume: number) {
+    this.volume = volume;
     this.gainNode.gain
       .cancelScheduledValues(this.context.currentTime())
-      .setValueAtTime(gain, this.context.currentTime());
+      .setValueAtTime(volume, this.context.currentTime());
   }
 
   public fadeTo(
@@ -98,14 +100,14 @@ export class MediaPlayer extends EventTarget {
     durationSeconds: number,
     callback?: () => void
   ): void {
-    this.volume = volume;
     clearTimeout(this.fadeCallbackTimeout);
-    if (this.context.state() !== 'running') {
-      this.setGain(volume);
+    if (this.volume === volume || this.context.state() !== 'running') {
+      this.setVolume(volume);
       callback?.apply(undefined);
       return;
     }
 
+    this.volume = volume;
     // value must always be positive for whatever reasons.
     // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
     const toVolume = Math.max(Number.EPSILON, volume);
@@ -123,20 +125,22 @@ export class MediaPlayer extends EventTarget {
 
   public addToPlaylist(src: string): void {
     this.playlist.push(src);
+    this.mediaItemCount++;
     if (this.context.state() === 'running') {
       this.scheduleBufferTicker(true);
     }
   }
 
   public clearPlaylist() {
+    this.mediaItemCount = 0;
     this.playlist.length = 0;
     this.chunkList.length = 0;
     this.sourceNodes.forEach((node) => node.stop()); // will dispatch ended event
     this.nextChunkStartTime = this.context.currentTime();
   }
 
-  public remainingItemCount(): number {
-    return this.playlist.length;
+  public getMediaItemCount(): number {
+    return this.mediaItemCount;
   }
 
   private async buffer() {
@@ -217,6 +221,8 @@ export class MediaPlayer extends EventTarget {
       this.sourceNodes.shift();
       this.logger?.debug('finished playing chunk');
       if (isLastChunk) {
+        // when clearing playlist, media item count is reset, so...
+        if (this.mediaItemCount > 0) this.mediaItemCount--;
         this.dispatchEvent(new Event(MediaPlayer.EVENT_ITEM_TRANSITION));
       }
 
