@@ -1,5 +1,5 @@
 import type CdnClient from '../src/cdn-client';
-import MediaPlayer from '../src/media-player';
+import { MediaPlayer } from '../src/media-player';
 
 class SimpleCdnClient implements CdnClient {
   private static readonly CDN_BASE_URL =
@@ -21,8 +21,15 @@ function main() {
   ];
 
   const player = new MediaPlayer(15, new SimpleCdnClient(), console);
-  player.addEventListener(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION, () =>
-    console.info('media item transitioned')
+  player.addEventListener(MediaPlayer.EVENT_ITEM_TRANSITION, () =>
+    console.info(
+      'playlist item transitioned, remaining:',
+      player.remainingItemCount()
+    )
+  );
+
+  player.addEventListener(MediaPlayer.EVENT_STATE_CHANGE, () =>
+    console.info('media player state changed:', player.getState())
   );
 
   items.forEach((item) => player.addToPlaylist(item));

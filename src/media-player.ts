@@ -2,8 +2,17 @@ import AudioContextDelegate from './audio-context-delegate';
 import CdnClient from './cdn-client';
 import type Logger from './logger';
 
-export default class MediaPlayer extends EventTarget {
-  public static readonly EVENT_MEDIA_ITEM_TRANSITION = 'mediaitemtransition';
+export const enum MediaPlayerState {
+  Idle = 'idle',
+  Buffering = 'buffering',
+  Playing = 'playing',
+  Paused = 'paused',
+  Stopped = 'stopped',
+}
+
+export class MediaPlayer extends EventTarget {
+  public static readonly EVENT_ITEM_TRANSITION = 'itemtransition';
+  public static readonly EVENT_STATE_CHANGE = 'statechange';
 
   private readonly context = new AudioContextDelegate();
   private readonly gainNode = this.context.createGain();
@@ -11,6 +20,7 @@ export default class MediaPlayer extends EventTarget {
   private readonly chunkList: string[] = [];
   private readonly sourceNodes: AudioBufferSourceNode[] = [];
 
+  private state = MediaPlayerState.Paused;
   private volume = 1.0;
   private nextChunkStartTime: number = this.context.currentTime();
 
@@ -34,6 +44,10 @@ export default class MediaPlayer extends EventTarget {
     this.context.suspend();
   }
 
+  public getState(): MediaPlayerState {
+    return this.state;
+  }
+
   public async play() {
     if (this.context.state() === 'closed') {
       throw new Error('attempted to restarted stopped player');
@@ -44,6 +58,14 @@ export default class MediaPlayer extends EventTarget {
       this.setGain(this.volume);
       await this.context.resume();
     }
+
+    this.setState(
+      this.sourceNodes.length > 0
+        ? MediaPlayerState.Playing
+        : this.chunkList.length > 0 || this.playlist.length > 0
+        ? MediaPlayerState.Buffering
+        : MediaPlayerState.Idle
+    );
   }
 
   public async pause() {
@@ -51,14 +73,18 @@ export default class MediaPlayer extends EventTarget {
     if (this.context.state() === 'running') {
       await this.context.suspend();
     }
+
+    this.setState(MediaPlayerState.Paused);
   }
 
   public async stop() {
     clearTimeout(this.bufferTicker);
-    await this.pause();
+    clearTimeout(this.fadeCallbackTimeout);
     if (this.context.state() !== 'closed') {
       await this.context.close();
     }
+
+    this.setState(MediaPlayerState.Stopped);
   }
 
   private setGain(gain: number) {
@@ -191,7 +217,15 @@ export default class MediaPlayer extends EventTarget {
       this.sourceNodes.shift();
       this.logger?.debug('finished playing chunk');
       if (isLastChunk) {
-        this.dispatchEvent(new Event(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION));
+        this.dispatchEvent(new Event(MediaPlayer.EVENT_ITEM_TRANSITION));
+      }
+
+      if (this.sourceNodes.length < 1) {
+        this.setState(
+          this.chunkList.length > 0 || this.playlist.length > 0
+            ? MediaPlayerState.Buffering
+            : MediaPlayerState.Idle
+        );
       }
     });
 
@@ -201,12 +235,22 @@ export default class MediaPlayer extends EventTarget {
 
     if (this.sourceNodes.length === 0) {
       // playback just started which is technically an item transition.
-      this.dispatchEvent(new Event(MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION));
+      this.dispatchEvent(new Event(MediaPlayer.EVENT_ITEM_TRANSITION));
     }
 
     this.sourceNodes.push(source);
     source.connect(this.gainNode);
     source.start(this.nextChunkStartTime);
     this.nextChunkStartTime += buffer.duration;
+    this.setState(MediaPlayerState.Playing);
+  }
+
+  private setState(state: MediaPlayerState) {
+    if (this.state === state) {
+      return;
+    }
+
+    this.state = state;
+    this.dispatchEvent(new Event(MediaPlayer.EVENT_STATE_CHANGE));
   }
 }

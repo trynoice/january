@@ -1,4 +1,4 @@
-import MediaPlayer from './media-player';
+import { MediaPlayer, MediaPlayerState } from './media-player';
 
 const mockGainNode = {
   connect: jest.fn(),
@@ -66,15 +66,18 @@ test('MediaPlayer', async () => {
     .mockResolvedValueOnce(buildMockResponse(firstChunk))
     .mockResolvedValue(buildMockResponse(nextChunk));
 
-  const mediaItemTransitionCallback = jest.fn();
+  const itemTransitionCb = jest.fn();
+  const stateChangeCb = jest.fn();
   const player = new MediaPlayer(20, mockCdnClient);
-  player.addEventListener(
-    MediaPlayer.EVENT_MEDIA_ITEM_TRANSITION,
-    mediaItemTransitionCallback
-  );
+  player.addEventListener(MediaPlayer.EVENT_ITEM_TRANSITION, itemTransitionCb);
+  player.addEventListener(MediaPlayer.EVENT_STATE_CHANGE, stateChangeCb);
+
+  expect(player.getState()).toBe(MediaPlayerState.Paused);
+  await player.play();
+  expect(player.getState()).toBe(MediaPlayerState.Idle);
+  expect(stateChangeCb).toBeCalled();
 
   player.addToPlaylist('test/index.jan');
-  await player.play();
 
   // not using fake timers because they're not working. Instead, exploit the
   // fact that play function enqueues the buffer loop with zero delay. So,
@@ -85,6 +88,7 @@ test('MediaPlayer', async () => {
   expect(mockGainNode.gain.value).toEqual(1);
   expect(mockBufferSource.buffer).toEqual(firstAudioBuffer);
   expect(mockBufferSource.start).toBeCalledWith(0.0);
+  expect(player.getState()).toBe(MediaPlayerState.Playing);
 
   mockAudioContextDelegate.state.mockReturnValue('running');
 
@@ -101,10 +105,11 @@ test('MediaPlayer', async () => {
   expect(player.remainingItemCount()).toBe(0);
   expect(mockCdnClient.getResource).not.toBeCalled();
 
-  // check media item transition event.
+  // check media player state and item transition event.
   // invoke ended listener all items.
   mockBufferSource.addEventListener.mock.calls.forEach((call) => call[1]());
-  expect(mediaItemTransitionCallback).toBeCalledTimes(2); // start and end of the track
+  expect(player.getState()).toBe(MediaPlayerState.Idle);
+  expect(itemTransitionCb).toBeCalledTimes(2); // start and end of the track
 
   // check fade callback
   const fadeCallback = jest.fn();
@@ -115,10 +120,12 @@ test('MediaPlayer', async () => {
   // check pause
   await player.pause();
   expect(mockAudioContextDelegate.suspend).toBeCalled();
+  expect(player.getState()).toBe(MediaPlayerState.Paused);
 
   // check stop
   await player.stop();
   expect(mockAudioContextDelegate.close).toBeCalled();
+  expect(player.getState()).toBe(MediaPlayerState.Stopped);
 });
 
 async function waitFor(durationMillis: number) {
