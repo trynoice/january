@@ -230,6 +230,7 @@ export class SoundPlayer extends EventTarget {
     }
 
     if (this.mediaPlayer.getState() === MediaPlayerState.Playing) {
+      this.setState(SoundPlayerState.Playing);
       this.mediaPlayer.fadeTo(this.getScaledVolume(), this.fadeInSeconds);
       return;
     }
