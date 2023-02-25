@@ -1,4 +1,5 @@
 import type CdnClient from '../src/cdn-client';
+import type { Logger } from '../src/logger';
 import { SoundPlayer } from '../src/sound-player';
 
 class SimpleCdnClient implements CdnClient {
@@ -14,10 +15,39 @@ class SimpleCdnClient implements CdnClient {
   }
 }
 
+class SimpleLogger implements Logger {
+  private static readonly LOG_LEVEL_DEBUG = 0;
+  private static readonly LOG_LEVEL_INFO = 1;
+  private static readonly LOG_LEVEL_WARN = 2;
+  private static readonly MIN_LOG_LEVEL =
+    process.env.NODE_ENV === 'production'
+      ? this.LOG_LEVEL_INFO
+      : this.LOG_LEVEL_DEBUG;
+
+  public debug(message: string) {
+    if (SimpleLogger.MIN_LOG_LEVEL <= SimpleLogger.LOG_LEVEL_DEBUG) {
+      console.debug(message);
+    }
+  }
+
+  public info(message: string) {
+    if (SimpleLogger.MIN_LOG_LEVEL <= SimpleLogger.LOG_LEVEL_INFO) {
+      console.info(message);
+    }
+  }
+
+  public warn(message: string) {
+    if (SimpleLogger.MIN_LOG_LEVEL <= SimpleLogger.LOG_LEVEL_WARN) {
+      console.warn(message);
+    }
+  }
+}
+
 function main() {
   const cdnClient = new SimpleCdnClient();
+  const logger = new SimpleLogger();
   ['rain', 'thunder'].forEach((soundId) => {
-    const player = new SoundPlayer(cdnClient, soundId, console);
+    const player = new SoundPlayer(cdnClient, soundId, logger);
     player.setFadeInDuration(5000);
     player.setFadeOutDuration(5000);
     player.addEventListener(SoundPlayer.EVENT_STATE_CHANGE, () =>
