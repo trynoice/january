@@ -19,8 +19,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
 
-  build-example:
-    name: Build Example
+  build-demo:
+    name: Build Demo
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -29,13 +29,13 @@ jobs:
           node-version-file: ".node-version"
       - run: |
           npm install
-          npm run build-example
+          npm run build-demo
       - uses: actions/upload-pages-artifact@v1
         with:
           path: dist/
 
-  deploy-example:
-    name: Deploy Example
+  deploy-demo:
+    name: Deploy Demo
     permissions:
       contents: read
       pages: write
@@ -44,7 +44,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build-example
+    needs: build-demo
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
