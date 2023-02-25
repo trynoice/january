@@ -21,7 +21,7 @@ function main() {
     player.setFadeInDuration(5000);
     player.setFadeOutDuration(5000);
     player.addEventListener(SoundPlayer.EVENT_STATE_CHANGE, () =>
-      console.info(soundId, 'state change:', player.getState())
+      console.info(`${soundId} state change: ${player.getState()}`)
     );
 
     document

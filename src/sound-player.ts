@@ -1,5 +1,5 @@
 import CdnClient from './cdn-client';
-import Logger from './logger';
+import { createNamedLogger, Logger } from './logger';
 import { MediaPlayer, MediaPlayerState } from './media-player';
 
 interface LibraryManifest {
@@ -66,8 +66,13 @@ export class SoundPlayer extends EventTarget {
   public constructor(cdnClient: CdnClient, soundId: string, logger?: Logger) {
     super();
     this.cdnClient = cdnClient;
-    this.logger = logger;
-    this.mediaPlayer = new MediaPlayer(15, cdnClient, logger);
+    this.logger = createNamedLogger(logger, `SoundPlayer(${soundId})`);
+    this.mediaPlayer = new MediaPlayer(
+      15,
+      cdnClient,
+      createNamedLogger(this.logger, 'MediaPayer')
+    );
+
     this.mediaPlayer.addEventListener(MediaPlayer.EVENT_ITEM_TRANSITION, () =>
       this.onMediaPlayerItemTransition()
     );

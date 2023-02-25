@@ -1,6 +1,6 @@
 import AudioContextDelegate from './audio-context-delegate';
 import CdnClient from './cdn-client';
-import type Logger from './logger';
+import type { Logger } from './logger';
 
 export const enum MediaPlayerState {
   Idle = 'idle',
@@ -163,7 +163,7 @@ export class MediaPlayer extends EventTarget {
       try {
         this.chunkList.push(...(await this.loadChunkList(mediaItemPath)));
       } catch (error) {
-        this.logger?.warn('failed to load chunk list for media item', error);
+        this.logger?.warn(`failed to load chunk list for media item: ${error}`);
       }
     }
 
@@ -185,7 +185,9 @@ export class MediaPlayer extends EventTarget {
         await this.appendToAudioContext(chunk, this.chunkList.length === 0);
         this.logger?.debug('appended chunk to audio context');
       } catch (error) {
-        this.logger?.warn('failed to load a chunk for the media item', error);
+        this.logger?.warn(
+          `failed to load a chunk for the media item: ${error}`
+        );
       }
     }
 
