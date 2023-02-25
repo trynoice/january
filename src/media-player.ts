@@ -30,7 +30,7 @@ export class MediaPlayer extends EventTarget {
   private readonly logger?: Logger;
 
   private bufferTicker?: ReturnType<typeof setTimeout>;
-  private fadeCallbackTimeout?: ReturnType<typeof setTimeout>;
+  private fadeTicker?: ReturnType<typeof setTimeout>;
 
   constructor(
     bufferSizeSeconds: number,
@@ -70,7 +70,7 @@ export class MediaPlayer extends EventTarget {
   }
 
   public async pause() {
-    clearTimeout(this.fadeCallbackTimeout);
+    clearTimeout(this.fadeTicker);
     if (this.context.state() === 'running') {
       await this.context.suspend();
     }
@@ -80,7 +80,7 @@ export class MediaPlayer extends EventTarget {
 
   public async stop() {
     clearTimeout(this.bufferTicker);
-    clearTimeout(this.fadeCallbackTimeout);
+    clearTimeout(this.fadeTicker);
     if (this.context.state() !== 'closed') {
       await this.context.close();
     }
@@ -90,9 +90,7 @@ export class MediaPlayer extends EventTarget {
 
   public setVolume(volume: number) {
     this.volume = volume;
-    this.gainNode.gain
-      .cancelScheduledValues(this.context.currentTime())
-      .setValueAtTime(volume, this.context.currentTime());
+    this.gainNode.gain.value = volume;
   }
 
   public fadeTo(
@@ -100,27 +98,36 @@ export class MediaPlayer extends EventTarget {
     durationSeconds: number,
     callback?: () => void
   ): void {
-    clearTimeout(this.fadeCallbackTimeout);
+    clearTimeout(this.fadeTicker);
     if (this.volume === volume || this.context.state() !== 'running') {
       this.setVolume(volume);
       callback?.apply(undefined);
       return;
     }
 
+    // audio node's ramp function doesn't cancel correctly with
+    // cancelScheduledValues and cancelAndHoldAtTime isn't implemented by
+    // Firefox. Therefore, here's a make-shift solution using timeouts.
+    const startTime = this.context.currentTime();
+    const fromVolume = this.gainNode.gain.value;
+    const deltaVolume = Math.abs(fromVolume - volume);
+    const sign = fromVolume > volume ? -1 : 1;
     this.volume = volume;
-    // value must always be positive for whatever reasons.
-    // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
-    const toVolume = Math.max(Number.EPSILON, volume);
-    this.gainNode.gain
-      .cancelScheduledValues(this.context.currentTime())
-      .linearRampToValueAtTime(
-        toVolume,
-        this.context.currentTime() + durationSeconds
-      );
+    const fadeTickerCallback = () => {
+      const elapsed = this.context.currentTime() - startTime;
+      if (elapsed >= durationSeconds) {
+        this.gainNode.gain.value = volume;
+        callback?.apply(undefined);
+        return;
+      }
 
-    if (callback != null) {
-      this.fadeCallbackTimeout = setTimeout(callback, durationSeconds * 1000);
-    }
+      this.gainNode.gain.value =
+        fromVolume + (elapsed / durationSeconds) * deltaVolume * sign;
+
+      this.fadeTicker = setTimeout(fadeTickerCallback, 0);
+    };
+
+    this.fadeTicker = setTimeout(fadeTickerCallback, 0);
   }
 
   public addToPlaylist(src: string): void {

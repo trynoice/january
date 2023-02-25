@@ -114,7 +114,8 @@ test('MediaPlayer', async () => {
   // check fade callback
   const fadeCallback = jest.fn();
   player.fadeTo(0, 0.1, fadeCallback);
-  await waitFor(150);
+  mockAudioContextDelegate.currentTime.mockReturnValue(1.5);
+  await flushPromises();
   expect(fadeCallback).toBeCalled();
 
   // check pause
