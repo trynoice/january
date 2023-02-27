@@ -63,7 +63,7 @@ export class MediaPlayer extends EventTarget {
     this.setState(
       this.sourceNodes.length > 0
         ? MediaPlayerState.Playing
-        : this.chunkList.length > 0 || this.playlist.length > 0
+        : this.mediaItemCount > 0
         ? MediaPlayerState.Buffering
         : MediaPlayerState.Idle
     );
