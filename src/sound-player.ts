@@ -217,7 +217,10 @@ export class SoundPlayer extends EventTarget {
   private setVolumeInternal(masterVolume: number, volume: number) {
     this.masterVolume = masterVolume;
     this.volume = volume;
-    this.mediaPlayer.fadeTo(this.getScaledVolume(), 1.5);
+
+    if (this.state === SoundPlayerState.Playing) {
+      this.mediaPlayer.fadeTo(this.getScaledVolume(), 1.5);
+    }
   }
 
   private getScaledVolume(): number {
