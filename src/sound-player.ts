@@ -330,7 +330,10 @@ export class SoundPlayer extends EventTarget {
       this.logger?.debug('finished loading sound metadata');
       this.isLoadingMetadata = false;
       this.metadataRetryDelayMillis = SoundPlayer.MIN_RETRY_DELAY_MILLIS;
-      this.queueNextSegment();
+      if (this.state === SoundPlayerState.Buffering) {
+        // playback was requested, should resume!
+        this.play();
+      }
     } catch (error) {
       this.metadataRetryDelayMillis = Math.min(
         this.metadataRetryDelayMillis * 2,
