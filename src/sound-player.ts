@@ -25,7 +25,7 @@ interface Segment {
   to?: string;
 }
 
-export const enum SoundPlayerState {
+export enum SoundPlayerState {
   Idle = 'idle',
   Buffering = 'buffering',
   Playing = 'playing',
