@@ -48,8 +48,8 @@ function main() {
   const logger = new SimpleLogger();
   ['rain', 'thunder'].forEach((soundId) => {
     const player = new SoundPlayer(cdnClient, soundId, logger);
-    player.setFadeInDuration(5000);
-    player.setFadeOutDuration(5000);
+    player.setFadeInSeconds(5);
+    player.setFadeOutSeconds(5);
     player.addEventListener(SoundPlayer.EVENT_STATE_CHANGE, () =>
       console.info(`${soundId} state change: ${player.getState()}`)
     );

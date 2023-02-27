@@ -184,12 +184,12 @@ export class SoundPlayer extends EventTarget {
     return this.volume;
   }
 
-  public setFadeInDuration(durationMillis: number) {
-    this.fadeInSeconds = durationMillis / 1000;
+  public setFadeInSeconds(seconds: number) {
+    this.fadeInSeconds = seconds;
   }
 
-  public setFadeOutDuration(durationMillis: number) {
-    this.fadeOutSeconds = durationMillis / 1000;
+  public setFadeOutSeconds(seconds: number) {
+    this.fadeOutSeconds = seconds;
   }
 
   public setPremiumSegmentsEnabled(enabled: boolean) {
@@ -327,10 +327,7 @@ export class SoundPlayer extends EventTarget {
       this.logger?.debug('finished loading sound metadata');
       this.isLoadingMetadata = false;
       this.metadataRetryDelayMillis = SoundPlayer.MIN_RETRY_DELAY_MILLIS;
-      if (this.state === SoundPlayerState.Buffering) {
-        // playback was requested, should resume!
-        this.play();
-      }
+      this.queueNextSegment();
     } catch (error) {
       this.metadataRetryDelayMillis = Math.min(
         this.metadataRetryDelayMillis * 2,

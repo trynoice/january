@@ -98,8 +98,9 @@ export class MediaPlayer extends EventTarget {
     durationSeconds: number,
     callback?: () => void
   ): void {
+    const fromVolume = this.gainNode.gain.value;
     clearTimeout(this.fadeTicker);
-    if (this.volume === volume || this.context.state() !== 'running') {
+    if (fromVolume === volume || this.context.state() !== 'running') {
       this.setVolume(volume);
       callback?.apply(undefined);
       return;
@@ -109,7 +110,6 @@ export class MediaPlayer extends EventTarget {
     // cancelScheduledValues and cancelAndHoldAtTime isn't implemented by
     // Firefox. Therefore, here's a make-shift solution using timeouts.
     const startTime = this.context.currentTime();
-    const fromVolume = this.gainNode.gain.value;
     const deltaVolume = Math.abs(fromVolume - volume);
     const sign = fromVolume > volume ? -1 : 1;
     this.volume = volume;
