@@ -89,6 +89,10 @@ export class MediaPlayer extends EventTarget {
   }
 
   public setVolume(volume: number) {
+    if (volume < 0 || volume > 1) {
+      throw new Error(`volume must be in range [0, 1], got: ${volume}`);
+    }
+
     this.volume = volume;
     this.gainNode.gain.value = volume;
   }

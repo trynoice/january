@@ -51,7 +51,7 @@ export class SoundPlayer extends EventTarget {
   private masterVolume = 1;
   private volume = 1;
   private state = SoundPlayerState.Idle;
-  private isLoadingMetadata = false;
+  private hasLoadedMetadata = false;
   private metadataRetryDelayMillis = SoundPlayer.MIN_RETRY_DELAY_MILLIS;
   private shouldFadeIn = false;
 
@@ -66,11 +66,11 @@ export class SoundPlayer extends EventTarget {
   public constructor(cdnClient: CdnClient, soundId: string, logger?: Logger) {
     super();
     this.cdnClient = cdnClient;
-    this.logger = createNamedLogger(logger, `SoundPlayer(${soundId})`);
+    this.logger = logger;
     this.mediaPlayer = new MediaPlayer(
       15,
       cdnClient,
-      createNamedLogger(this.logger, 'MediaPayer')
+      createNamedLogger(this.logger, `MediaPayer(${soundId})`)
     );
 
     this.mediaPlayer.addEventListener(MediaPlayer.EVENT_ITEM_TRANSITION, () =>
@@ -238,7 +238,7 @@ export class SoundPlayer extends EventTarget {
       return;
     }
 
-    if (this.isLoadingMetadata) {
+    if (!this.hasLoadedMetadata) {
       // set our state to buffering so that we can auto start when the metadata
       // finishes loading.
       this.setState(SoundPlayerState.Buffering);
@@ -281,7 +281,6 @@ export class SoundPlayer extends EventTarget {
   }
 
   private async loadMetadata(soundId: string) {
-    this.isLoadingMetadata = true;
     this.logger?.debug('start loading sound metadata');
 
     try {
@@ -328,7 +327,7 @@ export class SoundPlayer extends EventTarget {
       });
 
       this.logger?.debug('finished loading sound metadata');
-      this.isLoadingMetadata = false;
+      this.hasLoadedMetadata = true;
       this.metadataRetryDelayMillis = SoundPlayer.MIN_RETRY_DELAY_MILLIS;
       if (this.state === SoundPlayerState.Buffering) {
         // playback was requested, should resume!

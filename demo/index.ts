@@ -1,6 +1,6 @@
 import type CdnClient from '../src/cdn-client';
 import type { Logger } from '../src/logger';
-import { SoundPlayer } from '../src/sound-player';
+import { SoundPlayerManager } from '../src/sound-player-manager';
 
 class SimpleCdnClient implements CdnClient {
   private static readonly CDN_BASE_URL =
@@ -44,35 +44,61 @@ class SimpleLogger implements Logger {
 }
 
 function main() {
-  const cdnClient = new SimpleCdnClient();
-  const logger = new SimpleLogger();
+  const manager = new SoundPlayerManager(
+    new SimpleCdnClient(),
+    new SimpleLogger()
+  );
+
+  manager.setFadeInSeconds(5);
+  manager.setFadeOutSeconds(5);
+  manager.addEventListener(SoundPlayerManager.EVENT_STATE_CHANGE, () =>
+    console.info(`manager state change: ${manager.getState()}`)
+  );
+
+  document
+    .querySelector('#managerResume')
+    ?.addEventListener('click', () => manager.resume());
+
+  document
+    .querySelector('#managerPause')
+    ?.addEventListener('click', () => manager.pause());
+
+  document
+    .querySelector('#managerStop')
+    ?.addEventListener('click', () => manager.stopAll());
+
+  document
+    .querySelector('#managerVolume')
+    ?.addEventListener('input', (event) => {
+      if (event.target instanceof HTMLInputElement) {
+        manager.setMasterVolume(event.target.valueAsNumber);
+      }
+    });
+
   ['rain', 'thunder'].forEach((soundId) => {
-    const player = new SoundPlayer(cdnClient, soundId, logger);
-    player.setFadeInSeconds(5);
-    player.setFadeOutSeconds(5);
-    player.addEventListener(SoundPlayer.EVENT_STATE_CHANGE, () =>
-      console.info(`${soundId} state change: ${player.getState()}`)
-    );
+    let playerState = manager.getPlayerState(soundId);
+    manager.addEventListener(SoundPlayerManager.EVENT_STATE_CHANGE, () => {
+      if (playerState !== manager.getPlayerState(soundId)) {
+        playerState = manager.getPlayerState(soundId);
+        console.info(`${soundId} state change: ${playerState}`);
+      }
+    });
 
     document
       .querySelector(`#${soundId}Play`)
-      ?.addEventListener('click', () => player.play());
-
-    document
-      .querySelector(`#${soundId}Pause`)
-      ?.addEventListener('click', () => player.pause(false));
+      ?.addEventListener('click', () => manager.play(soundId));
 
     document
       .querySelector(`#${soundId}Stop`)
-      ?.addEventListener('click', () => player.stop(false));
+      ?.addEventListener('click', () => manager.stop(soundId));
 
-    const slider: HTMLInputElement | null = document.querySelector(
-      `#${soundId}Volume`
-    );
-
-    slider?.addEventListener('input', () =>
-      player.setVolume(Number.parseInt(slider.value) / 25)
-    );
+    document
+      .querySelector(`#${soundId}Volume`)
+      ?.addEventListener('input', (event) => {
+        if (event.target instanceof HTMLInputElement) {
+          manager.setVolume(soundId, event.target.valueAsNumber);
+        }
+      });
   });
 }
 
