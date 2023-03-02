@@ -32,3 +32,35 @@ export function createNamedLogger(
 ): Logger | undefined {
   return parent ? new NamedLogger(parent, name) : undefined;
 }
+
+export enum ConsoleLogLevel {
+  Debug,
+  Info,
+  Warn,
+}
+
+export class ConsoleLogger implements Logger {
+  private minLogLevel: ConsoleLogLevel;
+
+  public constructor(minLevel?: ConsoleLogLevel) {
+    this.minLogLevel = minLevel ?? ConsoleLogLevel.Debug;
+  }
+
+  public debug(message: string) {
+    if (this.minLogLevel <= ConsoleLogLevel.Debug) {
+      console.debug(message);
+    }
+  }
+
+  public info(message: string) {
+    if (this.minLogLevel <= ConsoleLogLevel.Info) {
+      console.info(message);
+    }
+  }
+
+  public warn(message: string) {
+    if (this.minLogLevel <= ConsoleLogLevel.Warn) {
+      console.warn(message);
+    }
+  }
+}

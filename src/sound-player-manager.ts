@@ -3,9 +3,9 @@ import { createNamedLogger, Logger } from './logger';
 import { SoundPlayer, SoundPlayerState } from './sound-player';
 
 export enum SoundPlayerManagerState {
+  Idle = 'idle',
   Playing = 'playing',
   Paused = 'paused',
-  Stopped = 'stopped',
 }
 
 export class SoundPlayerManager extends EventTarget {
@@ -14,7 +14,7 @@ export class SoundPlayerManager extends EventTarget {
   private readonly players = new Map<string, SoundPlayer>();
   private readonly playerStates = new Map<string, SoundPlayerState>();
 
-  private state = SoundPlayerManagerState.Stopped;
+  private state = SoundPlayerManagerState.Idle;
   private fadeInSeconds = 0;
   private fadeOutSeconds = 0;
   private masterVolume = 1;
@@ -112,7 +112,7 @@ export class SoundPlayerManager extends EventTarget {
   }
 
   private reconcileState() {
-    let managerState = SoundPlayerManagerState.Stopped;
+    let managerState = SoundPlayerManagerState.Idle;
     if (this.playerStates.size > 0) {
       managerState = SoundPlayerManagerState.Paused;
       for (const playerState of this.playerStates.values()) {

@@ -1,5 +1,5 @@
 import type CdnClient from '../src/cdn-client';
-import type { Logger } from '../src/logger';
+import { ConsoleLogger, ConsoleLogLevel } from '../src/logger';
 import { SoundPlayerManager } from '../src/sound-player-manager';
 
 class SimpleCdnClient implements CdnClient {
@@ -15,38 +15,14 @@ class SimpleCdnClient implements CdnClient {
   }
 }
 
-class SimpleLogger implements Logger {
-  private static readonly LOG_LEVEL_DEBUG = 0;
-  private static readonly LOG_LEVEL_INFO = 1;
-  private static readonly LOG_LEVEL_WARN = 2;
-  private static readonly MIN_LOG_LEVEL =
-    process.env.NODE_ENV === 'production'
-      ? this.LOG_LEVEL_INFO
-      : this.LOG_LEVEL_DEBUG;
-
-  public debug(message: string) {
-    if (SimpleLogger.MIN_LOG_LEVEL <= SimpleLogger.LOG_LEVEL_DEBUG) {
-      console.debug(message);
-    }
-  }
-
-  public info(message: string) {
-    if (SimpleLogger.MIN_LOG_LEVEL <= SimpleLogger.LOG_LEVEL_INFO) {
-      console.info(message);
-    }
-  }
-
-  public warn(message: string) {
-    if (SimpleLogger.MIN_LOG_LEVEL <= SimpleLogger.LOG_LEVEL_WARN) {
-      console.warn(message);
-    }
-  }
-}
-
 function main() {
   const manager = new SoundPlayerManager(
     new SimpleCdnClient(),
-    new SimpleLogger()
+    new ConsoleLogger(
+      process.env.NODE_ENV === 'production'
+        ? ConsoleLogLevel.Info
+        : ConsoleLogLevel.Debug
+    )
   );
 
   manager.setFadeInSeconds(5);
