@@ -43,8 +43,16 @@ export class SoundPlayerManager extends EventTarget {
     this.players.forEach((player) => player.setMasterVolume(volume));
   }
 
+  public getMasterVolume(): number {
+    return this.masterVolume;
+  }
+
   public setVolume(soundId: string, volume: number) {
     this.players.get(soundId)?.setVolume(volume);
+  }
+
+  public getVolume(soundId: string): number {
+    return this.players.get(soundId)?.getVolume() ?? 1;
   }
 
   public getPlayerState(soundId: string): SoundPlayerState {
@@ -82,6 +90,27 @@ export class SoundPlayerManager extends EventTarget {
     this.players.forEach((player) => player.stop(true));
   }
 
+  public addPlayerStateChangeListener(soundId: string, listener: () => void) {
+    // do not register listeners on the sound players because they are
+    // disposable, and an instance may not be available at the time of
+    // registration.
+    this.addEventListener(this.playerStateChangeEventType(soundId), listener);
+  }
+
+  public removePlayerStateChangeListener(
+    soundId: string,
+    listener: () => void
+  ) {
+    this.removeEventListener(
+      this.playerStateChangeEventType(soundId),
+      listener
+    );
+  }
+
+  private playerStateChangeEventType(soundId: string): string {
+    return `${soundId}${SoundPlayer.EVENT_STATE_CHANGE}`;
+  }
+
   private buildPlayer(soundId: string): SoundPlayer {
     const logger = createNamedLogger(this.logger, `SoundPlayer(${soundId})`);
     const player = new SoundPlayer(this.cdnClient, soundId, logger);
@@ -108,6 +137,7 @@ export class SoundPlayerManager extends EventTarget {
       this.playerStates.set(soundId, playerState);
     }
 
+    this.dispatchEvent(new Event(this.playerStateChangeEventType(soundId)));
     this.reconcileState();
   }
 
