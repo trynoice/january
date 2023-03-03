@@ -51,6 +51,7 @@ export class SoundPlayer extends EventTarget {
   private volume = 1;
   private state = SoundPlayerState.Paused;
   private hasLoadedMetadata = false;
+  private shouldPlayOnLoadingMetadata = false;
   private metadataRetryDelayMillis = SoundPlayer.MIN_RETRY_DELAY_MILLIS;
   private shouldFadeIn = false;
 
@@ -240,19 +241,19 @@ export class SoundPlayer extends EventTarget {
     }
 
     if (!this.hasLoadedMetadata) {
-      // set our state to buffering so that we can auto start when the metadata
-      // finishes loading.
+      // set our state to buffering and auto start when the metadata finishes
+      // loading.
+      this.shouldPlayOnLoadingMetadata = true;
       this.setState(SoundPlayerState.Buffering);
     } else {
-      this.shouldFadeIn = true;
-      this.mediaPlayer.setVolume(0);
       if (this.mediaPlayer.getMediaItemCount() === 0) {
         this.queueNextSegment();
       }
-    }
 
-    // notify media player to play whenever we queue items.
-    this.mediaPlayer.play();
+      this.shouldFadeIn = true;
+      this.mediaPlayer.setVolume(0);
+      this.mediaPlayer.play();
+    }
   }
 
   public pause(immediate: boolean) {
@@ -331,8 +332,9 @@ export class SoundPlayer extends EventTarget {
       this.logger?.debug('finished loading sound metadata');
       this.hasLoadedMetadata = true;
       this.metadataRetryDelayMillis = SoundPlayer.MIN_RETRY_DELAY_MILLIS;
-      if (this.mediaPlayer.getState() === MediaPlayerState.Idle) {
-        this.play(); // playback was requested, should resume!
+      if (this.shouldPlayOnLoadingMetadata) {
+        this.shouldPlayOnLoadingMetadata = false;
+        this.play();
       }
     } catch (error) {
       this.metadataRetryDelayMillis = Math.min(
