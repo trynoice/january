@@ -91,8 +91,8 @@ export class SoundPlayerManager extends EventTarget {
     this.players.forEach((player) => player.pause(false));
   }
 
-  public stopAll() {
-    this.players.forEach((player) => player.stop(true));
+  public stopAll(immediate: boolean) {
+    this.players.forEach((player) => player.stop(immediate));
   }
 
   public addPlayerStateChangeListener(soundId: string, listener: () => void) {
@@ -151,19 +151,29 @@ export class SoundPlayerManager extends EventTarget {
   }
 
   private reconcileState() {
-    let managerState = SoundPlayerManagerState.Idle;
-    if (this.playerStates.size > 0) {
-      managerState = SoundPlayerManagerState.Paused;
-      for (const playerState of this.playerStates.values()) {
-        if (
-          playerState !== SoundPlayerState.Pausing &&
-          playerState !== SoundPlayerState.Paused
-        ) {
-          managerState = SoundPlayerManagerState.Playing;
-          break;
-        }
+    let isPaused = true;
+    let isIdle = true;
+    for (const playerState of this.playerStates.values()) {
+      if (
+        playerState !== SoundPlayerState.Pausing &&
+        playerState !== SoundPlayerState.Paused
+      ) {
+        isPaused = false;
+      }
+
+      if (
+        playerState !== SoundPlayerState.Stopping &&
+        playerState !== SoundPlayerState.Stopped
+      ) {
+        isIdle = false;
       }
     }
+
+    const managerState = isIdle
+      ? SoundPlayerManagerState.Idle
+      : isPaused
+      ? SoundPlayerManagerState.Paused
+      : SoundPlayerManagerState.Playing;
 
     if (this.state === managerState) {
       return;

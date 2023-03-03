@@ -41,7 +41,7 @@ function main() {
 
   document
     .querySelector('#managerStop')
-    ?.addEventListener('click', () => manager.stopAll());
+    ?.addEventListener('click', () => manager.stopAll(false));
 
   document
     .querySelector('#managerVolume')

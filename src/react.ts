@@ -33,7 +33,7 @@ export function SoundPlayerManagerProvider(
   );
 
   useEffect(() => {
-    return () => soundPlayerManager?.stopAll();
+    return () => soundPlayerManager?.stopAll(true);
   }, [soundPlayerManager]);
 
   return createElement(SoundPlayerManagerContext.Provider, {
@@ -47,6 +47,7 @@ export interface SoundPlayerManagerController {
   readonly volume: number;
   readonly setVolume: (volume: number) => void;
   readonly togglePlayback: () => void;
+  readonly stop: () => void;
 }
 
 export function useSoundPlayerManager(): SoundPlayerManagerController {
@@ -80,6 +81,7 @@ export function useSoundPlayerManager(): SoundPlayerManagerController {
       state === SoundPlayerManagerState.Playing
         ? manager?.pause()
         : manager?.resume(),
+    stop: () => manager?.stopAll(false),
   };
 }
 
