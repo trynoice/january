@@ -74,9 +74,12 @@ test('MediaPlayer', async () => {
 
   expect(player.getState()).toBe(MediaPlayerState.Paused);
   await player.play();
+  expect(mockAudioContextDelegate.resume).toBeCalled();
+  expect(mockGainNode.gain.value).toEqual(1);
   expect(player.getState()).toBe(MediaPlayerState.Idle);
   expect(stateChangeCb).toBeCalled();
 
+  mockAudioContextDelegate.state.mockReturnValue('running');
   player.addToPlaylist('test/index.jan');
 
   // not using fake timers because they're not working. Instead, exploit the
@@ -84,13 +87,9 @@ test('MediaPlayer', async () => {
   // ensure that it runs before making assertions.
   await flushPromises();
 
-  expect(mockAudioContextDelegate.resume).toBeCalled();
-  expect(mockGainNode.gain.value).toEqual(1);
   expect(mockBufferSource.buffer).toEqual(firstAudioBuffer);
   expect(mockBufferSource.start).toBeCalledWith(0.0);
   expect(player.getState()).toBe(MediaPlayerState.Playing);
-
-  mockAudioContextDelegate.state.mockReturnValue('running');
 
   // check buffer ticker
   await waitFor(2010); // just a little more than the 2x buffer ticker

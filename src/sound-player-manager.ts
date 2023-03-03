@@ -68,11 +68,13 @@ export class SoundPlayerManager extends EventTarget {
     this.players.set(soundId, player);
 
     if (this.state === SoundPlayerManagerState.Paused) {
-      // force transition to paused state if other players are also paused.
+      // force transition to paused state if other players are also paused. We
+      // cannot call `player.pause()` instead of manually setting its state,
+      // because all new instances of players initialise at paused state,
+      // calling pause method won't trigger a state change event.
       this.playerStates.set(soundId, SoundPlayerState.Paused);
       this.dispatchPlayerStateChangeEvent(soundId);
     } else {
-      this.playerStates.set(soundId, SoundPlayerState.Idle);
       player.play();
     }
   }
@@ -154,9 +156,8 @@ export class SoundPlayerManager extends EventTarget {
       managerState = SoundPlayerManagerState.Paused;
       for (const playerState of this.playerStates.values()) {
         if (
-          playerState === SoundPlayerState.Idle ||
-          playerState === SoundPlayerState.Buffering ||
-          playerState === SoundPlayerState.Playing
+          playerState !== SoundPlayerState.Pausing &&
+          playerState !== SoundPlayerState.Paused
         ) {
           managerState = SoundPlayerManagerState.Playing;
           break;

@@ -120,7 +120,6 @@ export function useSoundPlayer(soundId: string): SoundPlayerController {
     volume: volume,
     setVolume: setVolume,
     togglePlayback: () =>
-      playerState === SoundPlayerState.Idle ||
       playerState === SoundPlayerState.Buffering ||
       playerState === SoundPlayerState.Playing
         ? manager?.stop(soundId)

@@ -261,7 +261,9 @@ export class MediaPlayer extends EventTarget {
     source.connect(this.gainNode);
     source.start(this.nextChunkStartTime);
     this.nextChunkStartTime += buffer.duration;
-    this.setState(MediaPlayerState.Playing);
+    if (this.context.state() === 'running') {
+      this.setState(MediaPlayerState.Playing);
+    }
   }
 
   private setState(state: MediaPlayerState) {

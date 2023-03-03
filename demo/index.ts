@@ -52,13 +52,9 @@ function main() {
     });
 
   ['rain', 'thunder'].forEach((soundId) => {
-    let playerState = manager.getPlayerState(soundId);
-    manager.addEventListener(SoundPlayerManager.EVENT_STATE_CHANGE, () => {
-      if (playerState !== manager.getPlayerState(soundId)) {
-        playerState = manager.getPlayerState(soundId);
-        console.info(`${soundId} state change: ${playerState}`);
-      }
-    });
+    manager.addPlayerStateChangeListener(soundId, () =>
+      console.log(`${soundId} state change: ${manager.getPlayerState(soundId)}`)
+    );
 
     document
       .querySelector(`#${soundId}Play`)

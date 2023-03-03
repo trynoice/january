@@ -26,7 +26,6 @@ interface Segment {
 }
 
 export enum SoundPlayerState {
-  Idle = 'idle',
   Buffering = 'buffering',
   Playing = 'playing',
   Pausing = 'pausing',
@@ -50,7 +49,7 @@ export class SoundPlayer extends EventTarget {
   private audioBitrate = '128k';
   private masterVolume = 1;
   private volume = 1;
-  private state = SoundPlayerState.Idle;
+  private state = SoundPlayerState.Paused;
   private hasLoadedMetadata = false;
   private metadataRetryDelayMillis = SoundPlayer.MIN_RETRY_DELAY_MILLIS;
   private shouldFadeIn = false;
@@ -218,8 +217,10 @@ export class SoundPlayer extends EventTarget {
     this.masterVolume = masterVolume;
     this.volume = volume;
 
-    if (this.state === SoundPlayerState.Playing) {
+    if (this.mediaPlayer.getState() === MediaPlayerState.Playing) {
       this.mediaPlayer.fadeTo(this.getScaledVolume(), 1.5);
+    } else {
+      this.mediaPlayer.setVolume(this.getScaledVolume());
     }
   }
 
@@ -243,14 +244,15 @@ export class SoundPlayer extends EventTarget {
       // finishes loading.
       this.setState(SoundPlayerState.Buffering);
     } else {
+      this.shouldFadeIn = true;
+      this.mediaPlayer.setVolume(0);
       if (this.mediaPlayer.getMediaItemCount() === 0) {
         this.queueNextSegment();
       }
-
-      this.shouldFadeIn = true;
-      this.mediaPlayer.setVolume(0);
-      this.mediaPlayer.play();
     }
+
+    // notify media player to play whenever we queue items.
+    this.mediaPlayer.play();
   }
 
   public pause(immediate: boolean) {
@@ -329,9 +331,8 @@ export class SoundPlayer extends EventTarget {
       this.logger?.debug('finished loading sound metadata');
       this.hasLoadedMetadata = true;
       this.metadataRetryDelayMillis = SoundPlayer.MIN_RETRY_DELAY_MILLIS;
-      if (this.state === SoundPlayerState.Buffering) {
-        // playback was requested, should resume!
-        this.play();
+      if (this.mediaPlayer.getState() === MediaPlayerState.Idle) {
+        this.play(); // playback was requested, should resume!
       }
     } catch (error) {
       this.metadataRetryDelayMillis = Math.min(
