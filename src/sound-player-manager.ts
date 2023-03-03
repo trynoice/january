@@ -33,9 +33,17 @@ export class SoundPlayerManager extends EventTarget {
     this.players.forEach((player) => player.setFadeInSeconds(seconds));
   }
 
+  public getFadeInSeconds(): number {
+    return this.fadeInSeconds;
+  }
+
   public setFadeOutSeconds(seconds: number) {
     this.fadeOutSeconds = seconds;
     this.players.forEach((player) => player.setFadeOutSeconds(seconds));
+  }
+
+  public getFadeOutSeconds(): number {
+    return this.fadeOutSeconds;
   }
 
   public setMasterVolume(volume: number) {

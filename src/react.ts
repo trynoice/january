@@ -42,6 +42,41 @@ export function SoundPlayerManagerProvider(
   });
 }
 
+export interface SoundPlayerManagerFadeConfigController {
+  fadeInSeconds: number;
+  setFadeInSeconds: (seconds: number) => void;
+  fadeOutSeconds: number;
+  setFadeOutSeconds: (seconds: number) => void;
+}
+
+export function useSoundPlayerManagerFadeConfig(): SoundPlayerManagerFadeConfigController {
+  const manager = useContext(SoundPlayerManagerContext);
+  const [fadeInSeconds, setFadeInSeconds] = useState(0);
+  const [fadeOutSeconds, setFadeOutSeconds] = useState(0);
+
+  useEffect(() => {
+    setFadeInSeconds(manager?.getFadeInSeconds() ?? fadeInSeconds);
+    setFadeOutSeconds(manager?.getFadeOutSeconds() ?? fadeOutSeconds);
+  }, [manager]);
+
+  useEffect(
+    () => manager?.setFadeInSeconds(fadeInSeconds),
+    [manager, fadeInSeconds]
+  );
+
+  useEffect(
+    () => manager?.setFadeOutSeconds(fadeOutSeconds),
+    [manager, fadeOutSeconds]
+  );
+
+  return {
+    fadeInSeconds,
+    setFadeInSeconds,
+    fadeOutSeconds,
+    setFadeOutSeconds,
+  };
+}
+
 export interface SoundPlayerManagerController {
   readonly state: SoundPlayerManagerState;
   readonly volume: number;
