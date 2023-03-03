@@ -68,8 +68,11 @@ export class SoundPlayerManager extends EventTarget {
     this.players.set(soundId, player);
 
     if (this.state === SoundPlayerManagerState.Paused) {
-      player.pause(true); // force transition to paused state if other players are also paused.
+      // force transition to paused state if other players are also paused.
+      this.playerStates.set(soundId, SoundPlayerState.Paused);
+      this.dispatchPlayerStateChangeEvent(soundId);
     } else {
+      this.playerStates.set(soundId, SoundPlayerState.Idle);
       player.play();
     }
   }
@@ -137,8 +140,12 @@ export class SoundPlayerManager extends EventTarget {
       this.playerStates.set(soundId, playerState);
     }
 
-    this.dispatchEvent(new Event(this.playerStateChangeEventType(soundId)));
+    this.dispatchPlayerStateChangeEvent(soundId);
     this.reconcileState();
+  }
+
+  private dispatchPlayerStateChangeEvent(soundId: string) {
+    this.dispatchEvent(new Event(this.playerStateChangeEventType(soundId)));
   }
 
   private reconcileState() {

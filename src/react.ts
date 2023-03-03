@@ -1,4 +1,14 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  createElement,
+  ReactElement,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import CdnClient from './cdn-client';
+import { Logger } from './logger';
 import { SoundPlayerState } from './sound-player';
 import {
   SoundPlayerManager,
@@ -9,7 +19,28 @@ const SoundPlayerManagerContext = createContext<SoundPlayerManager | undefined>(
   undefined
 );
 
-export const SoundPlayerManagerProvider = SoundPlayerManagerContext.Provider;
+export interface SoundPlayerManagerProviderProps {
+  readonly cdnClient: CdnClient;
+  readonly logger?: Logger;
+  readonly children?: ReactNode;
+}
+
+export function SoundPlayerManagerProvider(
+  props: SoundPlayerManagerProviderProps
+): ReactElement {
+  const [soundPlayerManager] = useState(
+    () => new SoundPlayerManager(props.cdnClient, props.logger)
+  );
+
+  useEffect(() => {
+    return () => soundPlayerManager?.stopAll();
+  }, [soundPlayerManager]);
+
+  return createElement(SoundPlayerManagerContext.Provider, {
+    value: soundPlayerManager,
+    children: props.children,
+  });
+}
 
 export interface SoundPlayerManagerController {
   readonly state: SoundPlayerManagerState;
