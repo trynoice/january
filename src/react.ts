@@ -46,7 +46,8 @@ export interface SoundPlayerManagerController {
   readonly state: SoundPlayerManagerState;
   readonly volume: number;
   readonly setVolume: (volume: number) => void;
-  readonly togglePlayback: () => void;
+  readonly resume: () => void;
+  readonly pause: () => void;
   readonly stop: () => void;
 }
 
@@ -77,10 +78,8 @@ export function useSoundPlayerManager(): SoundPlayerManagerController {
     state: state,
     volume: volume,
     setVolume: setVolume,
-    togglePlayback: () =>
-      state === SoundPlayerManagerState.Playing
-        ? manager?.pause()
-        : manager?.resume(),
+    resume: () => manager?.resume(),
+    pause: () => manager?.pause(),
     stop: () => manager?.stopAll(false),
   };
 }
@@ -89,7 +88,8 @@ export interface SoundPlayerController {
   readonly state: SoundPlayerState;
   readonly volume: number;
   readonly setVolume: (volume: number) => void;
-  readonly togglePlayback: () => void;
+  readonly play: () => void;
+  readonly stop: () => void;
 }
 
 export function useSoundPlayer(soundId: string): SoundPlayerController {
@@ -121,10 +121,7 @@ export function useSoundPlayer(soundId: string): SoundPlayerController {
     state: playerState,
     volume: volume,
     setVolume: setVolume,
-    togglePlayback: () =>
-      playerState === SoundPlayerState.Buffering ||
-      playerState === SoundPlayerState.Playing
-        ? manager?.stop(soundId)
-        : manager?.play(soundId),
+    play: () => manager?.play(soundId),
+    stop: () => manager?.stop(soundId),
   };
 }
