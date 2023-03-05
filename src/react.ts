@@ -133,16 +133,13 @@ export function useSoundPlayer(soundId: string): SoundPlayerController {
   const [volume, setVolume] = useState(1);
 
   useEffect(() => {
+    // reconcile volume when manager instance mutates.
+    setVolume(manager?.getVolume(soundId) ?? 1);
+
     const listener = () => {
       setPlayerState(
         manager?.getPlayerState(soundId) ?? SoundPlayerState.Stopped
       );
-
-      // reconcile volume; it might change on transitioning to stopped state.
-      const currentVolume = manager?.getVolume(soundId) ?? 1;
-      if (volume !== currentVolume) {
-        setVolume(currentVolume);
-      }
     };
 
     listener();

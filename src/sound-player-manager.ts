@@ -13,6 +13,7 @@ export class SoundPlayerManager extends EventTarget {
 
   private readonly players = new Map<string, SoundPlayer>();
   private readonly playerStates = new Map<string, SoundPlayerState>();
+  private readonly playerVolumes = new Map<string, number>();
 
   private state = SoundPlayerManagerState.Idle;
   private fadeInSeconds = 0;
@@ -56,11 +57,12 @@ export class SoundPlayerManager extends EventTarget {
   }
 
   public setVolume(soundId: string, volume: number) {
+    this.playerVolumes.set(soundId, volume);
     this.players.get(soundId)?.setVolume(volume);
   }
 
   public getVolume(soundId: string): number {
-    return this.players.get(soundId)?.getVolume() ?? 1;
+    return this.playerVolumes.get(soundId) ?? 1;
   }
 
   public getPlayerState(soundId: string): SoundPlayerState {
@@ -73,6 +75,7 @@ export class SoundPlayerManager extends EventTarget {
 
   public play(soundId: string) {
     const player = this.players.get(soundId) ?? this.buildPlayer(soundId);
+    player.setVolume(this.playerVolumes.get(soundId) ?? 1);
     this.players.set(soundId, player);
 
     if (this.state === SoundPlayerManagerState.Paused) {
