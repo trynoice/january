@@ -47,7 +47,6 @@ export class SoundPlayer extends EventTarget {
   private fadeOutSeconds = 0;
   private isPremiumSegmentsEnabled = false;
   private audioBitrate = '128k';
-  private masterVolume = 1;
   private volume = 1;
   private state = SoundPlayerState.Paused;
   private hasLoadedMetadata = false;
@@ -180,10 +179,6 @@ export class SoundPlayer extends EventTarget {
     return this.state;
   }
 
-  public getVolume(): number {
-    return this.volume;
-  }
-
   public setFadeInSeconds(seconds: number) {
     this.fadeInSeconds = seconds;
   }
@@ -206,18 +201,8 @@ export class SoundPlayer extends EventTarget {
     this.mediaPlayer.clearPlaylist(); // media player will trigger item transition event.
   }
 
-  public setMasterVolume(volume: number) {
-    this.setVolumeInternal(volume, this.volume);
-  }
-
   public setVolume(volume: number) {
-    this.setVolumeInternal(this.masterVolume, volume);
-  }
-
-  private setVolumeInternal(masterVolume: number, volume: number) {
-    this.masterVolume = masterVolume;
     this.volume = volume;
-
     if (this.mediaPlayer.getState() === MediaPlayerState.Playing) {
       this.mediaPlayer.fadeTo(this.getScaledVolume(), 1.5);
     } else {
@@ -226,7 +211,7 @@ export class SoundPlayer extends EventTarget {
   }
 
   private getScaledVolume(): number {
-    return Math.pow(this.masterVolume * this.volume, 2);
+    return Math.pow(this.volume, 2);
   }
 
   public play() {

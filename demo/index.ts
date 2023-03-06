@@ -47,7 +47,7 @@ function main() {
     .querySelector('#managerVolume')
     ?.addEventListener('input', (event) => {
       if (event.target instanceof HTMLInputElement) {
-        manager.setMasterVolume(event.target.valueAsNumber);
+        manager.setVolume(event.target.valueAsNumber);
       }
     });
 
@@ -68,7 +68,7 @@ function main() {
       .querySelector(`#${soundId}Volume`)
       ?.addEventListener('input', (event) => {
         if (event.target instanceof HTMLInputElement) {
-          manager.setVolume(soundId, event.target.valueAsNumber);
+          manager.setPlayerVolume(soundId, event.target.valueAsNumber);
         }
       });
   });

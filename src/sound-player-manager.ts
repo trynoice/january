@@ -18,7 +18,7 @@ export class SoundPlayerManager extends EventTarget {
   private state = SoundPlayerManagerState.Idle;
   private fadeInSeconds = 0;
   private fadeOutSeconds = 0;
-  private masterVolume = 1;
+  private volume = 1;
 
   private readonly cdnClient: CdnClient;
   private readonly logger?: Logger;
@@ -47,21 +47,23 @@ export class SoundPlayerManager extends EventTarget {
     return this.fadeOutSeconds;
   }
 
-  public setMasterVolume(volume: number) {
-    this.masterVolume = volume;
-    this.players.forEach((player) => player.setMasterVolume(volume));
+  public setVolume(volume: number) {
+    this.volume = volume;
+    this.players.forEach((_, soundId) =>
+      this.setPlayerVolume(soundId, this.playerVolumes.get(soundId) ?? 1)
+    );
   }
 
-  public getMasterVolume(): number {
-    return this.masterVolume;
+  public getVolume(): number {
+    return this.volume;
   }
 
-  public setVolume(soundId: string, volume: number) {
+  public setPlayerVolume(soundId: string, volume: number) {
     this.playerVolumes.set(soundId, volume);
-    this.players.get(soundId)?.setVolume(volume);
+    this.players.get(soundId)?.setVolume(this.volume * volume);
   }
 
-  public getVolume(soundId: string): number {
+  public getPlayerVolume(soundId: string): number {
     return this.playerVolumes.get(soundId) ?? 1;
   }
 
@@ -74,10 +76,7 @@ export class SoundPlayerManager extends EventTarget {
   }
 
   public play(soundId: string) {
-    const player = this.players.get(soundId) ?? this.buildPlayer(soundId);
-    player.setVolume(this.playerVolumes.get(soundId) ?? 1);
-    this.players.set(soundId, player);
-
+    const player = this.players.get(soundId) ?? this.initPlayer(soundId);
     if (this.state === SoundPlayerManagerState.Paused) {
       // force transition to paused state if other players are also paused. We
       // cannot call `player.pause()` instead of manually setting its state,
@@ -127,12 +126,13 @@ export class SoundPlayerManager extends EventTarget {
     return `${soundId}${SoundPlayer.EVENT_STATE_CHANGE}`;
   }
 
-  private buildPlayer(soundId: string): SoundPlayer {
+  private initPlayer(soundId: string): SoundPlayer {
     const logger = createNamedLogger(this.logger, `SoundPlayer(${soundId})`);
     const player = new SoundPlayer(this.cdnClient, soundId, logger);
+    this.players.set(soundId, player);
+    this.setPlayerVolume(soundId, this.playerVolumes.get(soundId) ?? 1);
     player.setFadeInSeconds(this.fadeInSeconds);
     player.setFadeOutSeconds(this.fadeOutSeconds);
-    player.setMasterVolume(this.masterVolume);
     player.addEventListener(SoundPlayer.EVENT_STATE_CHANGE, () =>
       this.onPlayerStateChangeEvent(soundId)
     );

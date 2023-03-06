@@ -93,7 +93,7 @@ export function useSoundPlayerManager(): SoundPlayerManagerController {
 
   useEffect(() => {
     // reconcile volume if manager instance changes.
-    setVolume(manager?.getMasterVolume() ?? 1);
+    setVolume(manager?.getVolume() ?? 1);
 
     const listener = () =>
       setState(manager?.getState() ?? SoundPlayerManagerState.Idle);
@@ -107,7 +107,7 @@ export function useSoundPlayerManager(): SoundPlayerManagerController {
       );
   }, [manager]);
 
-  useEffect(() => manager?.setMasterVolume(volume), [manager, volume]);
+  useEffect(() => manager?.setVolume(volume), [manager, volume]);
 
   return {
     state: state,
@@ -134,7 +134,7 @@ export function useSoundPlayer(soundId: string): SoundPlayerController {
 
   useEffect(() => {
     // reconcile volume when manager instance mutates.
-    setVolume(manager?.getVolume(soundId) ?? 1);
+    setVolume(manager?.getPlayerVolume(soundId) ?? 1);
 
     const listener = () => {
       setPlayerState(
@@ -147,7 +147,7 @@ export function useSoundPlayer(soundId: string): SoundPlayerController {
     return () => manager?.removePlayerStateChangeListener(soundId, listener);
   }, [manager]);
 
-  useEffect(() => manager?.setVolume(soundId, volume), [manager, volume]);
+  useEffect(() => manager?.setPlayerVolume(soundId, volume), [manager, volume]);
 
   return {
     state: playerState,
