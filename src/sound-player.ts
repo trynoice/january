@@ -188,7 +188,12 @@ export class SoundPlayer extends EventTarget {
   }
 
   public setPremiumSegmentsEnabled(enabled: boolean) {
+    if (enabled === this.isPremiumSegmentsEnabled) {
+      return;
+    }
+
     this.isPremiumSegmentsEnabled = enabled;
+    this.currentSegment = undefined;
     this.mediaPlayer.clearPlaylist(); // media player will trigger item transition event.
   }
 
@@ -198,6 +203,7 @@ export class SoundPlayer extends EventTarget {
     }
 
     this.audioBitrate = bitrate;
+    this.currentSegment = undefined;
     this.mediaPlayer.clearPlaylist(); // media player will trigger item transition event.
   }
 
