@@ -49,8 +49,8 @@ export class SoundPlayerManager extends EventTarget {
 
   public setVolume(volume: number) {
     this.volume = volume;
-    this.players.forEach((_, soundId) =>
-      this.setPlayerVolume(soundId, this.playerVolumes.get(soundId) ?? 1)
+    this.players.forEach((player, soundId) =>
+      player.setVolume(volume * (this.playerVolumes.get(soundId) ?? 1))
     );
   }
 
@@ -98,7 +98,12 @@ export class SoundPlayerManager extends EventTarget {
   }
 
   public pause() {
-    this.players.forEach((player) => player.pause(false));
+    this.players.forEach((player) => {
+      // some sounds may be stopping when the pause is requested.
+      if (player.getState() !== SoundPlayerState.Stopping) {
+        player.pause(false);
+      }
+    });
   }
 
   public stopAll(immediate: boolean) {
@@ -166,6 +171,7 @@ export class SoundPlayerManager extends EventTarget {
     let isIdle = true;
     for (const playerState of this.playerStates.values()) {
       if (
+        playerState !== SoundPlayerState.Stopping && // some sounds may be stopping
         playerState !== SoundPlayerState.Pausing &&
         playerState !== SoundPlayerState.Paused
       ) {

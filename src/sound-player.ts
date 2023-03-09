@@ -248,6 +248,12 @@ export class SoundPlayer extends EventTarget {
   }
 
   public pause(immediate: boolean) {
+    if (this.shouldPlayOnLoadingMetadata) {
+      this.shouldPlayOnLoadingMetadata = false;
+      this.setState(SoundPlayerState.Paused);
+      return;
+    }
+
     clearTimeout(this.queueNextSegmentTimeout);
     if (immediate || this.mediaPlayer.getState() !== MediaPlayerState.Playing) {
       this.mediaPlayer.pause();
