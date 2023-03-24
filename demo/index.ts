@@ -41,7 +41,7 @@ function main() {
 
   document
     .querySelector('#managerStop')
-    ?.addEventListener('click', () => manager.stopAll(false));
+    ?.addEventListener('click', () => manager.stop(false));
 
   document
     .querySelector('#managerVolume')
@@ -52,23 +52,23 @@ function main() {
     });
 
   ['rain', 'thunder'].forEach((soundId) => {
-    manager.addPlayerStateChangeListener(soundId, () =>
-      console.log(`${soundId} state change: ${manager.getPlayerState(soundId)}`)
+    manager.addSoundStateChangeListener(soundId, () =>
+      console.log(`${soundId} state change: ${manager.getSoundState(soundId)}`)
     );
 
     document
       .querySelector(`#${soundId}Play`)
-      ?.addEventListener('click', () => manager.play(soundId));
+      ?.addEventListener('click', () => manager.playSound(soundId));
 
     document
       .querySelector(`#${soundId}Stop`)
-      ?.addEventListener('click', () => manager.stop(soundId));
+      ?.addEventListener('click', () => manager.stopSound(soundId));
 
     document
       .querySelector(`#${soundId}Volume`)
       ?.addEventListener('input', (event) => {
         if (event.target instanceof HTMLInputElement) {
-          manager.setPlayerVolume(soundId, event.target.valueAsNumber);
+          manager.setSoundVolume(soundId, event.target.valueAsNumber);
         }
       });
   });

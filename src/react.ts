@@ -33,7 +33,7 @@ export function SoundPlayerManagerProvider(
   );
 
   useEffect(() => {
-    return () => soundPlayerManager?.stopAll(true);
+    return () => soundPlayerManager?.stop(true);
   }, [soundPlayerManager]);
 
   return createElement(SoundPlayerManagerContext.Provider, {
@@ -115,7 +115,7 @@ export function useSoundPlayerManager(): SoundPlayerManagerController {
     setVolume: setVolume,
     resume: () => manager?.resume(),
     pause: () => manager?.pause(),
-    stop: () => manager?.stopAll(false),
+    stop: () => manager?.stop(false),
   };
 }
 
@@ -134,26 +134,26 @@ export function useSoundPlayer(soundId: string): SoundPlayerController {
 
   useEffect(() => {
     // reconcile volume when manager instance mutates.
-    setVolume(manager?.getPlayerVolume(soundId) ?? 1);
+    setVolume(manager?.getSoundVolume(soundId) ?? 1);
 
     const listener = () => {
       setPlayerState(
-        manager?.getPlayerState(soundId) ?? SoundPlayerState.Stopped
+        manager?.getSoundState(soundId) ?? SoundPlayerState.Stopped
       );
     };
 
     listener();
-    manager?.addPlayerStateChangeListener(soundId, listener);
-    return () => manager?.removePlayerStateChangeListener(soundId, listener);
+    manager?.addSoundStateChangeListener(soundId, listener);
+    return () => manager?.removeSoundStateChangeListener(soundId, listener);
   }, [manager]);
 
-  useEffect(() => manager?.setPlayerVolume(soundId, volume), [manager, volume]);
+  useEffect(() => manager?.setSoundVolume(soundId, volume), [manager, volume]);
 
   return {
     state: playerState,
     volume: volume,
     setVolume: setVolume,
-    play: () => manager?.play(soundId),
-    stop: () => manager?.stop(soundId),
+    play: () => manager?.playSound(soundId),
+    stop: () => manager?.stopSound(soundId),
   };
 }
