@@ -27,7 +27,7 @@ function main() {
 
   manager.setFadeInSeconds(5);
   manager.setFadeOutSeconds(5);
-  manager.addEventListener(SoundPlayerManager.EVENT_STATE_CHANGE, () =>
+  manager.addStateListener(() =>
     console.info(`manager state change: ${manager.getState()}`)
   );
 
@@ -52,7 +52,7 @@ function main() {
     });
 
   ['rain', 'thunder'].forEach((soundId) => {
-    manager.addSoundStateChangeListener(soundId, () =>
+    manager.addSoundStateListener(soundId, () =>
       console.log(`${soundId} state change: ${manager.getSoundState(soundId)}`)
     );
 

@@ -42,22 +42,22 @@ export function SoundPlayerManagerProvider(
   });
 }
 
-export interface SoundPlayerManagerFadeConfigController {
+export type AudioBitrate = '128k' | '192k' | '256k' | '320k';
+
+export interface SoundPlayerManagerConfigController {
   fadeInSeconds: number;
   setFadeInSeconds: (seconds: number) => void;
   fadeOutSeconds: number;
   setFadeOutSeconds: (seconds: number) => void;
+  audioBitrate: AudioBitrate;
+  setAudioBitrate: (bitrate: AudioBitrate) => void;
 }
 
-export function useSoundPlayerManagerFadeConfig(): SoundPlayerManagerFadeConfigController {
+export function useSoundPlayerManagerConfig(): SoundPlayerManagerConfigController {
   const manager = useContext(SoundPlayerManagerContext);
   const [fadeInSeconds, setFadeInSeconds] = useState(0);
   const [fadeOutSeconds, setFadeOutSeconds] = useState(0);
-
-  useEffect(() => {
-    setFadeInSeconds(manager?.getFadeInSeconds() ?? fadeInSeconds);
-    setFadeOutSeconds(manager?.getFadeOutSeconds() ?? fadeOutSeconds);
-  }, [manager]);
+  const [audioBitrate, setAudioBitrate] = useState<AudioBitrate>('128k');
 
   useEffect(
     () => manager?.setFadeInSeconds(fadeInSeconds),
@@ -69,11 +69,15 @@ export function useSoundPlayerManagerFadeConfig(): SoundPlayerManagerFadeConfigC
     [manager, fadeOutSeconds]
   );
 
+  useEffect(() => manager?.setAudioBitrate(audioBitrate), [audioBitrate]);
+
   return {
     fadeInSeconds,
     setFadeInSeconds,
     fadeOutSeconds,
     setFadeOutSeconds,
+    audioBitrate,
+    setAudioBitrate,
   };
 }
 
@@ -88,23 +92,24 @@ export interface SoundPlayerManagerController {
 
 export function useSoundPlayerManager(): SoundPlayerManagerController {
   const manager = useContext(SoundPlayerManagerContext);
-  const [state, setState] = useState(SoundPlayerManagerState.Idle);
-  const [volume, setVolume] = useState(1);
+  const [state, setState] = useState(
+    manager?.getState() ?? SoundPlayerManagerState.Idle
+  );
+
+  const [volume, setVolume] = useState(manager?.getVolume() ?? 1);
 
   useEffect(() => {
-    // reconcile volume if manager instance changes.
-    setVolume(manager?.getVolume() ?? 1);
-
-    const listener = () =>
+    const stateListener = () =>
       setState(manager?.getState() ?? SoundPlayerManagerState.Idle);
+    const volumeListener = () => setVolume(manager?.getVolume() ?? 1);
 
-    listener();
-    manager?.addEventListener(SoundPlayerManager.EVENT_STATE_CHANGE, listener);
-    return () =>
-      manager?.removeEventListener(
-        SoundPlayerManager.EVENT_STATE_CHANGE,
-        listener
-      );
+    manager?.addStateListener(stateListener);
+    manager?.addVolumeListener(volumeListener);
+
+    return () => {
+      manager?.removeStateListener(stateListener);
+      manager?.removeVolumeListener(volumeListener);
+    };
   }, [manager]);
 
   useEffect(() => manager?.setVolume(volume), [manager, volume]);
@@ -129,28 +134,31 @@ export interface SoundPlayerController {
 
 export function useSoundPlayer(soundId: string): SoundPlayerController {
   const manager = useContext(SoundPlayerManagerContext);
-  const [playerState, setPlayerState] = useState(SoundPlayerState.Stopped);
-  const [volume, setVolume] = useState(1);
+  const [state, setState] = useState(
+    manager?.getSoundState(soundId) ?? SoundPlayerState.Stopped
+  );
+
+  const [volume, setVolume] = useState(manager?.getSoundVolume(soundId) ?? 1);
 
   useEffect(() => {
-    // reconcile volume when manager instance mutates.
-    setVolume(manager?.getSoundVolume(soundId) ?? 1);
+    const stateListener = () =>
+      setState(manager?.getSoundState(soundId) ?? SoundPlayerState.Stopped);
+    const volumeListener = () =>
+      setVolume(manager?.getSoundVolume(soundId) ?? 1);
 
-    const listener = () => {
-      setPlayerState(
-        manager?.getSoundState(soundId) ?? SoundPlayerState.Stopped
-      );
+    manager?.addSoundStateListener(soundId, stateListener);
+    manager?.addSoundVolumeListener(soundId, volumeListener);
+
+    return () => {
+      manager?.removeSoundStateListener(soundId, stateListener);
+      manager?.removeSoundVolumeListener(soundId, volumeListener);
     };
-
-    listener();
-    manager?.addSoundStateChangeListener(soundId, listener);
-    return () => manager?.removeSoundStateChangeListener(soundId, listener);
   }, [manager]);
 
   useEffect(() => manager?.setSoundVolume(soundId, volume), [manager, volume]);
 
   return {
-    state: playerState,
+    state: state,
     volume: volume,
     setVolume: setVolume,
     play: () => manager?.playSound(soundId),
