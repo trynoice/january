@@ -204,9 +204,14 @@ export class SoundPlayerManager {
    * Pauses all sounds with a fade-out effect.
    */
   public pause() {
+    // If all sounds are stopping, we should transition to pausing state. If
+    // only some sounds are stopping, we should exempt them from pausing.
+    const isManagerStopping = this.state === SoundPlayerManagerState.Idle;
     this.soundPlayers.forEach((player) => {
-      // some sounds may be stopping when the pause is requested.
-      if (player.getState() !== SoundPlayerState.Stopping) {
+      if (
+        player.getState() !== SoundPlayerState.Stopping ||
+        isManagerStopping
+      ) {
         player.pause(false);
       }
     });
