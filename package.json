@@ -49,6 +49,7 @@
   "files": [
     "/dist"
   ],
+  "main": "./dist/index.js",
   "exports": {
     ".": {
       "import": "./dist/index.js"
